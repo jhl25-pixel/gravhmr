@@ -1,0 +1,576 @@
+<title>GravHMR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="GravHMR couples SLAM and human mesh recovery for world-grounded human motion.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centred reading column (abstract, method) that widens into full-bleed viewer bands for the results. */
+:root {
+  --bg: #f5f7fa; --surface: #ffffff; --ink: #141a24; --muted: #5b6676; --line: #dde3eb;
+  --ours: #2f6fde; --base: #cf4b3f; --gt: #8e98a6; --cam: #e08a2e;
+  --stage: #eef2f6; --stage-floor: #fbfcfd;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --col: 54rem; --wide: 78rem;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
+  --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
+  --stage: #1a2029; --stage-floor: #5d6878; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
+  --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
+  --stage: #1a2029; --stage-floor: #5d6878; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 400 1rem/1.65 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: var(--col); margin-inline: auto }
+.wide { max-width: var(--wide); margin-inline: auto }
+section { padding-block: 3.2rem 0 }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0 }
+h2 { font-size: clamp(1.45rem, 1.1rem + 1.2vw, 1.9rem); font-weight: 700; letter-spacing: -.01em }
+h2 + p.lede { color: var(--muted); margin: .5rem 0 1.4rem; max-width: 46rem }
+p { margin: 0 0 1rem }
+a { color: var(--ours) }
+:focus-visible { outline: 2px solid var(--ours); outline-offset: 2px; border-radius: 4px }
+
+/* ---------- header ---------- */
+header { padding-block: 3.6rem 1.2rem; text-align: center }
+.title { font-size: clamp(2.6rem, 1.6rem + 4.5vw, 4.6rem); font-weight: 700; letter-spacing: -.035em; line-height: 1 }
+.title .g { position: relative; color: var(--ours) }
+.tagline { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.1rem, .95rem + .7vw, 1.45rem);
+  margin: .9rem auto 0; max-width: 40rem; color: var(--ink) }
+.authors { color: var(--muted); margin-top: 1rem; font-size: .95rem }
+.links { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-top: 1.4rem }
+.links a, .links span { display: inline-flex; align-items: center; gap: .45rem; padding: .5rem 1rem; border-radius: 999px;
+  font-weight: 500; font-size: .92rem; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--surface) }
+.links a:hover { border-color: var(--ours); color: var(--ours) }
+.links span { color: var(--muted) }
+.links svg { width: 1em; height: 1em }
+
+figure { margin: 0 }
+figure img { display: block; width: 100%; height: auto; border-radius: 10px; background: #fff }
+figcaption { color: var(--muted); font-size: .9rem; margin-top: .7rem; line-height: 1.5 }
+.teaser { max-width: 46rem; margin: 1.6rem auto 0 }
+
+/* ---------- abstract ---------- */
+.abstract p { font-size: 1.06rem }
+.points { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 1.4rem }
+.point { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.2rem }
+.point h3 { font-size: 1.08rem; margin-bottom: .4rem }
+.point p { margin: 0; color: var(--muted); font-size: .95rem }
+.point .k { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ours) }
+.stats { display: flex; flex-wrap: wrap; gap: 1.2rem 2.4rem; margin-top: 1.6rem; padding-top: 1.2rem; border-top: 1px solid var(--line) }
+.stat b { display: block; font: 700 1.7rem/1.1 var(--f-display); font-variant-numeric: tabular-nums }
+.stat span { color: var(--muted); font-size: .86rem }
+
+/* ---------- viewers ---------- */
+.viewer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden }
+.chips { display: flex; gap: .5rem; overflow-x: auto; padding: .8rem; border-bottom: 1px solid var(--line); scrollbar-width: thin }
+.chip { flex: 0 0 auto; display: flex; align-items: center; gap: .55rem; padding: .3rem .7rem .3rem .3rem; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; font: 500 .85rem var(--f-body) }
+.chip img { width: 54px; height: 34px; object-fit: cover; border-radius: 6px; display: block }
+.chip small { display: block; color: var(--muted); font: 400 .72rem var(--f-mono) }
+.chip[aria-pressed="true"] { border-color: var(--ours); box-shadow: inset 0 0 0 1px var(--ours) }
+.stagewrap { display: grid; gap: 1px; background: var(--line) }
+.wild .stagewrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr) }
+.emdb .stagewrap { grid-template-columns: minmax(0, .8fr) repeat(3, minmax(0, 1fr)) }
+.pane { position: relative; background: var(--stage); min-width: 0; aspect-ratio: 4 / 3.4 }
+.wild .pane { aspect-ratio: 16 / 11 }
+.pane video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #0b0d10 }
+.pane canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; touch-action: none; cursor: grab }
+.pane canvas:active { cursor: grabbing }
+.tag { position: absolute; left: .6rem; top: .6rem; z-index: 2; font: 600 .78rem var(--f-body); padding: .22rem .55rem;
+  border-radius: 6px; background: color-mix(in srgb, var(--surface) 86%, transparent); color: var(--ink); display: flex; align-items: center; gap: .4rem;
+  pointer-events: none }
+.tag i { width: .62rem; height: .62rem; border-radius: 50%; display: inline-block }
+.hint { position: absolute; right: .6rem; bottom: .55rem; z-index: 2; font: 400 .72rem var(--f-mono); color: var(--muted); pointer-events: none }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font: 400 .85rem var(--f-mono); z-index: 3; background: var(--stage) }
+.bar { display: flex; align-items: center; gap: .8rem; padding: .7rem .9rem; border-top: 1px solid var(--line); flex-wrap: wrap }
+.bar button.play { width: 2.3rem; height: 2.3rem; border-radius: 50%; border: 0; background: var(--ours); color: #fff; cursor: pointer;
+  display: grid; place-items: center; flex: 0 0 auto }
+.bar button.play svg { width: 1rem; height: 1rem }
+.bar input[type=range] { flex: 1 1 12rem; min-width: 8rem; accent-color: var(--ours) }
+.bar .time { font: 400 .82rem var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 8.5rem; text-align: right }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 500 .8rem var(--f-mono); padding: .35rem .55rem; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--ours); color: #fff }
+.toggle { display: inline-flex; align-items: center; gap: .35rem; font-size: .84rem; color: var(--muted); cursor: pointer }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; padding: .7rem .9rem; border-top: 1px solid var(--line); font-size: .85rem; color: var(--muted) }
+.legend b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums }
+.swatch { display: inline-block; width: .7rem; height: .7rem; border-radius: 3px; margin-right: .35rem; vertical-align: -1px }
+
+/* ---------- table ---------- */
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px }
+table { border-collapse: collapse; width: 100%; min-width: 50rem; font-size: .88rem; font-variant-numeric: tabular-nums }
+th, td { padding: .5rem .6rem; text-align: center; white-space: nowrap }
+th:first-child, td:first-child { text-align: left; padding-left: 1rem }
+thead th { font-weight: 600; color: var(--muted); font-size: .78rem; border-bottom: 1px solid var(--line) }
+thead tr:first-child th { color: var(--ink); font-size: .85rem; border-bottom: 0; padding-bottom: .1rem }
+tbody tr + tr td { border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent) }
+tr.ours td { background: color-mix(in srgb, var(--ours) 9%, transparent) }
+tr.ours td:first-child { font-weight: 600; color: var(--ours) }
+td.b { font-weight: 700 } td.u { text-decoration: underline; text-underline-offset: 3px }
+.sep { border-left: 1px solid var(--line) }
+.note { color: var(--muted); font-size: .86rem; margin-top: .8rem; line-height: 1.5 }
+
+/* ---------- bibtex ---------- */
+.bib { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 12px }
+.bib pre { margin: 0; padding: 1.1rem 1.2rem; overflow-x: auto; font: 400 .84rem/1.6 var(--f-mono); color: var(--ink) }
+.bib button { position: absolute; top: .6rem; right: .6rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  border-radius: 8px; padding: .3rem .7rem; font: 500 .8rem var(--f-body); cursor: pointer }
+footer { color: var(--muted); font-size: .82rem; text-align: center; padding-block: 3rem 2.4rem }
+
+@media (max-width: 860px) {
+  .wild .stagewrap { grid-template-columns: 1fr }
+  .emdb .stagewrap { grid-template-columns: 1fr 1fr }
+  .emdb .pane.video { grid-column: 1 / -1; aspect-ratio: 16 / 9 }
+  .wild .pane.video { aspect-ratio: 16 / 9 }
+}
+@media (max-width: 520px) { .emdb .stagewrap { grid-template-columns: 1fr } .bar .time { min-width: 0 } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important } }
+</style>
+
+<header class="col">
+  <h1 class="title">Grav<span class="g">HMR</span></h1>
+  <p class="tagline">World-grounded human motion by coupling SLAM and human mesh recovery in a shared gravity frame</p>
+  <p class="authors">Anonymous authors · Under review</p>
+  <nav class="links" aria-label="Paper links">
+    <span title="Available after review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>Paper (coming soon)</span>
+    <span title="Available after review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></svg>Code (coming soon)</span>
+    <a href="#results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Results</a>
+    <a href="#citation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h4v4H7zM13 7h4v4h-4zM9 11c0 3-2 5-4 6M15 11c0 3-2 5-4 6"/></svg>BibTeX</a>
+  </nav>
+  <figure class="teaser">
+    <img src="assets/teaser.png" alt="Input frame, TRAM with a 32 degree tilt error, and GravHMR with a 9 degree tilt error against the ground-truth body; below, the accumulated motion of each.">
+    <figcaption>TRAM maps the body into the camera and then the camera into the world, so camera-frame body errors become world-frame tilt (32°). GravHMR refines the HMR body directly in the SLAM world (9°).</figcaption>
+  </figure>
+</header>
+
+<main>
+<section class="col abstract" id="abstract">
+  <h2>Abstract</h2>
+  <p>A monocular human mesh recovery (HMR) model sees the body well but cannot tell where it is going: its global trajectory drifts as soon as the camera moves. A SLAM system has the opposite strengths. GravHMR is a training-free, plug-and-play refinement that couples the two. It takes the camera trajectory from SLAM and the body from an off-the-shelf HMR model, and refines the motion directly in the metric SLAM world.</p>
+  <p>On EMDB-2, GravHMR reaches 154.0&nbsp;mm W-MPJPE<sub>100</sub> with ViPE and 189.8&nbsp;mm with masked DROID-SLAM, against 222.4&nbsp;mm for TRAM on the same masked DROID camera. With the same HMR backbone it lowers the error by 44.3% over GVHMR.</p>
+  <div class="points">
+    <div class="point"><div class="k">SLAM coupling</div><h3>SLAM supplies the trajectory</h3><p>The body orientation follows the SLAM camera rotation, and the root is lifted along each 2D keypoint ray with the HMR depth. A short optimization keeps the root consistent with reprojection and the HMR's own body velocity.</p></div>
+    <div class="point"><div class="k">Shared gravity axis</div><h3>One vertical for camera and body</h3><p>We express SLAM and HMR around a shared gravity axis: heading is resolved about that axis, and an image-based gravity estimate stands the SLAM world upright, independent of the HMR backbone.</p></div>
+  </div>
+  <div class="stats" aria-label="Headline numbers on EMDB-2">
+    <div class="stat"><b>154.0 mm</b><span>W-MPJPE<sub>100</sub>, ViPE camera</span></div>
+    <div class="stat"><b>189.8 vs 222.4</b><span>ours vs TRAM, same masked DROID camera</span></div>
+    <div class="stat"><b>−44.3%</b><span>over GVHMR, same HMR backbone</span></div>
+  </div>
+</section>
+
+<section class="col" id="method">
+  <h2>Method</h2>
+  <p class="lede">An HMR backbone gives the body in the camera frame; a SLAM backbone gives the camera in the world. GravHMR aligns body orientation about gravity, then recovers the root trajectory in the SLAM world.</p>
+  <figure><img src="assets/pipeline.png" alt="Pipeline: an HMR backbone and a SLAM backbone run on the input video; step one aligns orientation about the gravity axis, step two recovers the root trajectory in the SLAM world."></figure>
+</section>
+
+<section class="wide" id="wild">
+  <div class="col" style="max-width:var(--col)">
+    <h2>In-the-wild videos</h2>
+    <p class="lede">Sports clips from the internet, camera estimated with ViPE, no ground truth. Drag to orbit around the body, scroll or middle-drag to zoom; the view follows the subject. The orange frustum is the estimated camera.</p>
+  </div>
+  <div class="viewer wild" id="wildViewer">
+    <div class="chips" role="group" aria-label="Choose a clip" id="wildChips"></div>
+    <div class="stagewrap">
+      <div class="pane video"><span class="tag">Input video</span><video id="wildVideo" muted playsinline preload="auto"></video></div>
+      <div class="pane" id="wildPane"><span class="tag"><i style="background:var(--ours)"></i>GravHMR, world frame</span><span class="hint">drag · scroll</span><div class="loading" id="wildLoading">Loading…</div></div>
+    </div>
+    <div class="bar" id="wildBar"></div>
+  </div>
+</section>
+
+<section class="wide" id="emdb">
+  <div class="col" style="max-width:var(--col)">
+    <h2>Without and with GravHMR on EMDB</h2>
+    <p class="lede">The same HMR backbone (GVHMR with PVA-Net keypoints) before and after GravHMR, next to the ground truth. Each view follows one body; the three views rotate together. Predictions are aligned to the ground truth once, on the first 100 frames, so later drift stays visible.</p>
+  </div>
+  <div class="viewer emdb" id="emdbViewer">
+    <div class="chips" role="group" aria-label="Choose a sequence" id="emdbChips"></div>
+    <div class="stagewrap">
+      <div class="pane video"><span class="tag">Input video</span><video id="emdbVideo" muted playsinline preload="auto"></video></div>
+      <div class="pane" id="emdbPane0"><span class="tag"><i style="background:var(--gt)"></i>Ground truth</span><div class="loading">Loading…</div></div>
+      <div class="pane" id="emdbPane1"><span class="tag"><i style="background:var(--base)"></i>w/o GravHMR</span><div class="loading">Loading…</div></div>
+      <div class="pane" id="emdbPane2"><span class="tag"><i style="background:var(--ours)"></i>w/ GravHMR</span><span class="hint">drag · scroll</span><div class="loading">Loading…</div></div>
+    </div>
+    <div class="bar" id="emdbBar"></div>
+    <div class="legend" id="emdbLegend"></div>
+  </div>
+</section>
+
+<section class="wide" id="results">
+  <div class="col" style="max-width:var(--col)">
+    <h2>Main results</h2>
+    <p class="lede">Global human motion on EMDB-2 and RICH. WA-MPJPE<sub>100</sub>, W-MPJPE<sub>100</sub> and FS in mm, RTE in %, Jitter in 10&nbsp;m/s³. Lower is better. <strong>Bold</strong> is best and <u>underlined</u> is second best per column.</p>
+  </div>
+  <div class="tablewrap">
+    <table id="mainTable">
+      <thead>
+        <tr><th></th><th colspan="5">EMDB-2</th><th colspan="5" class="sep">RICH</th></tr>
+        <tr><th>Method</th><th>WA-MPJPE</th><th>W-MPJPE</th><th>RTE</th><th>Jitter</th><th>FS</th>
+            <th class="sep">WA-MPJPE</th><th>W-MPJPE</th><th>RTE</th><th>Jitter</th><th>FS</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="note col" style="max-width:var(--col)">Ours w/ ViPE uses estimated camera poses and intrinsics. On EMDB-2, ours w/ masked DROID uses the same camera estimates and ground-truth intrinsics as TRAM.</p>
+</section>
+
+<section class="col" id="citation">
+  <h2>Citation</h2>
+  <p class="lede">The paper is under review; the entry below will be updated with the final venue and authors.</p>
+  <div class="bib"><button type="button" id="copyBib">Copy</button><pre id="bibText">@article{gravhmr2026,
+  title   = {GravHMR: Coupling SLAM and Human Mesh Recovery
+             in a Shared Gravity Frame},
+  author  = {Anonymous},
+  journal = {Under review},
+  year    = {2026}
+}</pre></div>
+</section>
+</main>
+<footer>GravHMR project page · Interactive results rendered in your browser with three.js</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+// ---------------- data ----------------
+const WILD = [
+  { id: "7595-720",  sport: "Running" },      { id: "7869-720",  sport: "Running" },
+  { id: "6667-720",  sport: "Running" },      { id: "25021-720", sport: "Skateboarding" },
+  { id: "4568-1080", sport: "Skateboarding" }, { id: "48371-720", sport: "Skating" },
+  { id: "14048-720", sport: "Cycling" },      { id: "21477-720", sport: "Cycling" },
+  { id: "24436-720", sport: "Cycling" },
+];
+// root error = mean pelvis error over the sequence after one Sim3 on the first 100 frames (m)
+const EMDB = [
+  { id: "P8_64_outdoor_skateboard",     name: "Skateboarding", wo: 18.89, w: 0.84 },
+  { id: "P5_40_indoor_walk_big_circle", name: "Big circle",    wo: 3.40,  w: 0.63 },
+  { id: "P9_79_outdoor_walk_rectangle", name: "Rectangle",     wo: 2.51,  w: 0.60 },
+];
+const TABLE = [ // EMDB-2: WA, W, RTE, Jitter, FS | RICH: WA, W, RTE, Jitter, FS
+  ["SLAHMR", 326.9, 776.1, 10.2, null, null, 98.1, 186.4, 28.9, 34.3, 5.1],
+  ["WHAM", 135.6, 354.8, 6.0, 22.5, 4.4, 109.9, 184.6, 4.1, 19.7, 3.3],
+  ["TRAM", 76.4, 222.4, 1.4, 18.5, 23.4, 103.6, 168.4, 2.7, 18.7, 12.9],
+  ["GVHMR", 111.0, 276.5, 2.0, 16.7, 3.5, 78.8, 126.3, 2.4, 12.8, 3.0],
+  ["GVHMR + PVA-Net", 106.7, 262.8, 2.1, 15.2, 3.4, 74.0, 119.1, 2.3, 10.7, 2.7],
+  ["PromptHMR-Vid", 71.0, 216.5, 1.3, 16.3, 3.5, null, null, null, null, null],
+  ["GENMO", 65.1, 210.9, 1.0, 9.58, 8.3, 80.7, 127.2, 2.6, 8.6, 2.7],
+  ["TRAM + HTD-Refine", 71.7, 204.9, 1.5, 6.6, 7.5, 90.2, 145.3, 2.5, 4.2, 6.5],
+  ["GVHMR + HTD-Refine", 69.2, 192.4, 1.5, 7.2, 5.7, 75.2, 123.8, 2.3, 3.6, 3.3],
+  ["Ours w/ masked DROID", 66.6, 189.8, 1.4, 6.7, 5.4, null, null, null, null, null],
+  ["Ours w/ ViPE", 57.4, 154.0, 1.3, 8.5, 5.2, 65.5, 109.1, 2.1, 3.5, 4.3],
+];
+
+// ---------------- table ----------------
+(function buildTable() {
+  const tb = document.querySelector("#mainTable tbody");
+  const ranks = [];
+  for (let c = 1; c <= 10; c++) {
+    const vals = [...new Set(TABLE.map(r => r[c]).filter(v => v != null))].sort((a, b) => a - b);
+    ranks[c] = { best: vals[0], second: vals[1] };
+  }
+  for (const r of TABLE) {
+    const tr = document.createElement("tr");
+    if (r[0].startsWith("Ours")) tr.className = "ours";
+    tr.innerHTML = `<td>${r[0]}</td>` + r.slice(1).map((v, i) => {
+      const c = i + 1, cls = [c === 6 ? "sep" : "", v === ranks[c].best ? "b" : v === ranks[c].second ? "u" : ""].join(" ").trim();
+      return `<td class="${cls}">${v == null ? "–" : v.toFixed(c === 4 && v === 9.58 ? 2 : 1)}</td>`;
+    }).join("");
+    tb.appendChild(tr);
+  }
+})();
+document.getElementById("copyBib").addEventListener("click", e => {
+  const t = document.getElementById("bibText").textContent, b = e.currentTarget;
+  const done = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1500); };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, () => selectBib()); else selectBib();
+  function selectBib() { const r = document.createRange(); r.selectNodeContents(document.getElementById("bibText"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Press Ctrl+C"; }
+});
+
+// ---------------- theme ----------------
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const themeListeners = [];
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => themeListeners.forEach(f => f()));
+new MutationObserver(() => themeListeners.forEach(f => f())).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+// ---------------- clip loading + CPU skinning ----------------
+const cache = new Map();
+async function loadClip(id) {
+  if (cache.has(id)) return cache.get(id);
+  const p = (async () => {
+    const h = await (await fetch(`data/${id}.json`)).json();
+    const buf = await (await fetch(`data/${id}.bin`)).arrayBuffer();
+    const A = d => new ({ float32: Float32Array, uint16: Uint16Array, uint8: Uint8Array })[d.dtype](buf, d.offset, d.count);
+    const faces = A(h.faces);
+    const bodies = h.bodies.map(b => {
+      const B = { label: b.label, role: b.role, parents: b.parents, rest: A(b.rest_verts), joints: A(b.rest_joints),
+        si: A(b.skin_index), sw: A(b.skin_weight), quats: A(b.quats), root: A(b.root_pos) };
+      B.nJ = B.parents.length; B.nV = B.rest.length / 3; return B;
+    });
+    const clip = { id, n: h.frames, fps: h.fps, faces, bodies };
+    if (h.cam_pos) { clip.camPos = A(h.cam_pos); clip.camQuat = A(h.cam_quat); }
+    return clip;
+  })();
+  cache.set(id, p); p.catch(() => cache.delete(id)); return p;
+}
+// world bone matrices (3x4, row-major) for frame f, then linear blend skinning into out
+const G = new Float64Array(24 * 12), BM = new Float64Array(24 * 12);
+function skin(B, f, out) {
+  const q = B.quats, J = B.joints, P = B.parents;
+  for (let j = 0; j < B.nJ; j++) {
+    const o = (f * B.nJ + j) * 4, x = q[o], y = q[o + 1], z = q[o + 2], w = q[o + 3];
+    const r = [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w),
+               2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w),
+               2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)];
+    let t;
+    if (j === 0) t = [B.root[f * 3], B.root[f * 3 + 1], B.root[f * 3 + 2]];
+    else { const p = P[j]; t = [J[j * 3] - J[p * 3], J[j * 3 + 1] - J[p * 3 + 1], J[j * 3 + 2] - J[p * 3 + 2]]; }
+    const g = j * 12;
+    if (j === 0) { for (let a = 0; a < 3; a++) { for (let b = 0; b < 3; b++) G[g + a * 4 + b] = r[a * 3 + b]; G[g + a * 4 + 3] = t[a]; } }
+    else {
+      const pg = P[j] * 12;
+      for (let a = 0; a < 3; a++) {
+        for (let b = 0; b < 3; b++) G[g + a * 4 + b] = G[pg + a * 4] * r[b] + G[pg + a * 4 + 1] * r[3 + b] + G[pg + a * 4 + 2] * r[6 + b];
+        G[g + a * 4 + 3] = G[pg + a * 4] * t[0] + G[pg + a * 4 + 1] * t[1] + G[pg + a * 4 + 2] * t[2] + G[pg + a * 4 + 3];
+      }
+    }
+    for (let a = 0; a < 3; a++) {
+      for (let b = 0; b < 3; b++) BM[g + a * 4 + b] = G[g + a * 4 + b];
+      BM[g + a * 4 + 3] = G[g + a * 4 + 3] - (G[g + a * 4] * J[j * 3] + G[g + a * 4 + 1] * J[j * 3 + 1] + G[g + a * 4 + 2] * J[j * 3 + 2]);
+    }
+  }
+  const V = B.rest, si = B.si, sw = B.sw;
+  for (let v = 0; v < B.nV; v++) {
+    const vx = V[v * 3], vy = V[v * 3 + 1], vz = V[v * 3 + 2]; let ox = 0, oy = 0, oz = 0;
+    for (let k = 0; k < 4; k++) {
+      const w = sw[v * 4 + k]; if (w === 0) continue; const m = si[v * 4 + k] * 12;
+      ox += w * (BM[m] * vx + BM[m + 1] * vy + BM[m + 2] * vz + BM[m + 3]);
+      oy += w * (BM[m + 4] * vx + BM[m + 5] * vy + BM[m + 6] * vz + BM[m + 7]);
+      oz += w * (BM[m + 8] * vx + BM[m + 9] * vy + BM[m + 10] * vz + BM[m + 11]);
+    }
+    out[v * 3] = ox; out[v * 3 + 1] = oy; out[v * 3 + 2] = oz;
+  }
+}
+
+// ---------------- 3D view: scene per pane, camera orbits a moving target ----------------
+function gridTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, 256, 256); g.strokeStyle = "rgba(0,0,0,.22)"; g.lineWidth = 3; g.strokeRect(0, 0, 256, 256);
+  g.strokeStyle = "rgba(0,0,0,.10)"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(128, 0); g.lineTo(128, 256); g.moveTo(0, 128); g.lineTo(256, 128); g.stroke();
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
+const GRID = gridTexture();
+function makeView(pane, orbit) {
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  pane.appendChild(renderer.domElement);
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(38, 1, .05, 400);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x8a94a3, .75); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, .75); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: .5, far: 30 });
+  sun.shadow.bias = -.0005; scene.add(sun, sun.target);
+  const floorMat = new THREE.MeshStandardMaterial({ map: GRID, roughness: 1, metalness: 0 });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), floorMat); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  const view = { pane, renderer, scene, camera, sun, floor, floorMat, orbit, target: new THREE.Vector3(), objs: [] };
+  const recolor = () => {
+    const bg = new THREE.Color(css("--stage"));
+    scene.background = bg; scene.fog = new THREE.Fog(bg, 14, 40);
+    floorMat.color.copy(new THREE.Color(css("--stage-floor"))); view.dirty = true;
+  };
+  recolor(); themeListeners.push(recolor);
+  new ResizeObserver(() => { const w = pane.clientWidth, h = pane.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix(); view.dirty = true; }).observe(pane);
+  attachOrbit(renderer.domElement, orbit);
+  return view;
+}
+// orbit state {theta, phi, r} may be shared by several views (EMDB rotates them together)
+function attachOrbit(el, o) {
+  const pts = new Map(); let pinch0 = 0, r0 = 0;
+  el.addEventListener("pointerdown", e => { el.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY, b: e.button });
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); r0 = o.r; } });
+  el.addEventListener("pointermove", e => {
+    const p = pts.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) o.r = clampR(r0 * pinch0 / d); }
+    else if (p.b === 1) o.r = clampR(o.r * Math.exp(dy * .01));
+    else { o.theta -= dx * .008; o.phi = Math.min(Math.PI / 2 - .03, Math.max(.12, o.phi - dy * .006)); }
+    o.v++;
+  });
+  const up = e => { pts.delete(e.pointerId); pinch0 = 0; };
+  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  el.addEventListener("wheel", e => { e.preventDefault(); o.r = clampR(o.r * Math.exp(e.deltaY * .0012)); o.v++; }, { passive: false });
+  el.addEventListener("auxclick", e => e.preventDefault()); el.addEventListener("mousedown", e => { if (e.button === 1) e.preventDefault(); });
+  function clampR(r) { return Math.min(30, Math.max(1.2, r)); }
+}
+function placeCamera(view) {
+  const o = view.orbit, t = view.target;
+  view.camera.position.set(t.x + o.r * Math.sin(o.phi) * Math.sin(o.theta), t.y + o.r * Math.cos(o.phi), t.z + o.r * Math.sin(o.phi) * Math.cos(o.theta));
+  view.camera.lookAt(t);
+  view.sun.position.set(t.x + 2.5, t.y + 6, t.z + 3); view.sun.target.position.copy(t);
+}
+function clearView(view) { for (const o of view.objs) { view.scene.remove(o); o.geometry && o.geometry.dispose(); } view.objs = []; }
+function sizeFloor(view, clip) {
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+  for (const B of clip.bodies) for (let f = 0; f < clip.n; f++) { const x = B.root[f * 3], z = B.root[f * 3 + 2]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+  const m = 25, w = Math.ceil(x1 - x0 + 2 * m), d = Math.ceil(z1 - z0 + 2 * m);
+  view.floor.scale.set(w, d, 1); view.floor.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
+  const tex = GRID.clone(); tex.needsUpdate = true; tex.repeat.set(w, d); tex.offset.set(((x0 + x1) / 2 - w / 2) % 1, 0);
+  view.floorMat.map = tex; view.floorMat.needsUpdate = true;
+}
+function trailLine(B, n, color) {
+  const pos = new Float32Array(n * 3);
+  for (let f = 0; f < n; f++) { pos[f * 3] = B.root[f * 3]; pos[f * 3 + 1] = .012; pos[f * 3 + 2] = B.root[f * 3 + 2]; }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  const full = new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: .28 }));
+  const done = new THREE.Line(g, new THREE.LineBasicMaterial({ color })); done.renderOrder = 1;
+  return [full, done];
+}
+function bodyMesh(geo, color) {
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: .55, metalness: .02 }));
+  m.castShadow = true; m.frustumCulled = false; return m;
+}
+function frustum(color) {
+  const s = .22, w = s * .8, h = s * .45, d = s;
+  const P = [[0, 0, 0], [-w, -h, d], [w, -h, d], [w, h, d], [-w, h, d]];
+  const E = [0, 1, 0, 2, 0, 3, 0, 4, 1, 2, 2, 3, 3, 4, 4, 1], arr = [];
+  for (const i of E) arr.push(...P[i]);
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(arr, 3));
+  return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color }));
+}
+
+// ---------------- player: shared clock, transport bar ----------------
+const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+function makeBar(el, extra) {
+  el.innerHTML = `<button class="play" type="button" aria-label="Play">${ICON_PLAY}</button>
+    <input type="range" min="0" max="1" step="1" value="0" aria-label="Time">
+    <span class="time">0.0 s / 0.0 s</span>
+    <span class="seg" role="group" aria-label="Playback speed">${[.25, .5, 1, 2].map(s => `<button type="button" data-s="${s}" aria-pressed="${s === 1}">${s}×</button>`).join("")}</span>${extra || ""}`;
+  return { play: el.querySelector(".play"), range: el.querySelector("input[type=range]"), time: el.querySelector(".time"), seg: el.querySelector(".seg") };
+}
+function makePlayer(video, barEl, extra, onFrame) {
+  const ui = makeBar(barEl, extra), P = { clip: null, f: 0, speed: 1, playing: true, video, ui };
+  const setIcon = () => { ui.play.innerHTML = P.playing ? ICON_PAUSE : ICON_PLAY; ui.play.setAttribute("aria-label", P.playing ? "Pause" : "Play"); };
+  ui.play.addEventListener("click", () => { P.playing = !P.playing; setIcon(); P.playing ? video.play().catch(() => {}) : video.pause(); });
+  ui.range.addEventListener("input", () => { P.f = +ui.range.value; video.currentTime = (P.f + .5) / P.clip.fps; P.show(); });
+  ui.seg.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; P.speed = +b.dataset.s; video.playbackRate = P.speed;
+    ui.seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); });
+  video.addEventListener("ended", () => { video.currentTime = 0; if (P.playing) video.play().catch(() => {}); });
+  P.load = (clip, src) => { P.clip = clip; P.f = 0; ui.range.max = clip.n - 1; ui.range.value = 0; video.src = src; video.playbackRate = P.speed;
+    if (P.playing) video.play().catch(() => { P.playing = false; setIcon(); }); setIcon(); P.show(); };
+  P.show = () => { const c = P.clip; if (!c) return; ui.range.value = P.f; ui.time.textContent = `${(P.f / c.fps).toFixed(1)} s / ${((c.n - 1) / c.fps).toFixed(1)} s`; onFrame(P.f); };
+  P.tick = () => {
+    if (!P.clip) return;
+    if (P.playing && !video.paused) { const f = Math.min(P.clip.n - 1, Math.floor(video.currentTime * P.clip.fps + 1e-3)); if (f !== P.f) { P.f = f; P.show(); } }
+  };
+  setIcon(); return P;
+}
+
+// ---------------- section 1: in-the-wild ----------------
+const wildOrbit = { theta: 2.4, phi: 1.12, r: 5, v: 0 };
+const wild = { view: makeView(document.getElementById("wildPane"), wildOrbit), clip: null, meshes: [], loading: document.getElementById("wildLoading") };
+wild.player = makePlayer(document.getElementById("wildVideo"), document.getElementById("wildBar"),
+  `<label class="toggle"><input type="checkbox" id="wildCam" checked> camera</label>`, f => updateWild(f));
+document.getElementById("wildCam").addEventListener("change", () => updateWild(wild.player.f));
+async function selectWild(id) {
+  document.querySelectorAll("#wildChips .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.id === id));
+  wild.loading.hidden = false; wild.loading.textContent = "Loading…";
+  let clip; try { clip = await loadClip(id); } catch (e) { wild.loading.textContent = "Could not load this clip. Reload the page to retry."; return; }
+  const v = wild.view; clearView(v); wild.clip = clip; wild.meshes = [];
+  const ours = new THREE.Color(css("--ours")), cam = new THREE.Color(css("--cam"));
+  for (const B of clip.bodies) {
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(B.nV * 3), 3)); geo.setIndex(new THREE.BufferAttribute(clip.faces, 1));
+    const m = bodyMesh(geo, ours); v.scene.add(m); v.objs.push(m); wild.meshes.push({ B, geo, m });
+    const [a, b] = trailLine(B, clip.n, ours); v.scene.add(a, b); v.objs.push(a, b); wild.trail = b;
+  }
+  if (clip.camPos) {
+    const fr = frustum(cam); v.scene.add(fr); v.objs.push(fr); wild.fr = fr;
+    const pos = new Float32Array(clip.camPos); const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const cl = new THREE.Line(g, new THREE.LineBasicMaterial({ color: cam, transparent: true, opacity: .55 })); v.scene.add(cl); v.objs.push(cl); wild.camLine = cl;
+  }
+  sizeFloor(v, clip); wild.loading.hidden = true;
+  wild.player.load(clip, `data/${id}.mp4`);
+}
+function updateWild(f) {
+  const c = wild.clip; if (!c) return;
+  for (const { B, geo } of wild.meshes) { skin(B, f, geo.attributes.position.array); geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere(); }
+  const B = c.bodies[0]; wild.view.target.set(B.root[f * 3], B.root[f * 3 + 1], B.root[f * 3 + 2]);
+  wild.trail.geometry.setDrawRange(0, f + 1);
+  const show = document.getElementById("wildCam").checked;
+  if (wild.fr) { wild.fr.visible = wild.camLine.visible = show;
+    wild.fr.position.set(c.camPos[f * 3], c.camPos[f * 3 + 1], c.camPos[f * 3 + 2]);
+    wild.fr.quaternion.set(c.camQuat[f * 4], c.camQuat[f * 4 + 1], c.camQuat[f * 4 + 2], c.camQuat[f * 4 + 3]); }
+  wild.view.dirty = true;
+}
+
+// ---------------- section 2: EMDB, three follow-cams, one shared orbit ----------------
+const emdbOrbit = { theta: 2.3, phi: 1.1, r: 5.5, v: 0 };
+const emdb = { views: [0, 1, 2].map(i => makeView(document.getElementById("emdbPane" + i), emdbOrbit)), clip: null, bodies: [] };
+emdb.player = makePlayer(document.getElementById("emdbVideo"), document.getElementById("emdbBar"), "", f => updateEmdb(f));
+const ROLE_COLOR = { gt: "--gt", base: "--base", ours: "--ours" };
+async function selectEmdb(id) {
+  document.querySelectorAll("#emdbChips .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.id === id));
+  const loads = emdb.views.map(v => v.pane.querySelector(".loading")); loads.forEach(l => { l.hidden = false; l.textContent = "Loading…"; });
+  let clip; try { clip = await loadClip(id); } catch (e) { loads.forEach(l => l.textContent = "Could not load this sequence. Reload the page to retry."); return; }
+  emdb.clip = clip; emdb.bodies = clip.bodies.map(B => {
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(B.nV * 3), 3)); geo.setIndex(new THREE.BufferAttribute(clip.faces, 1));
+    return { B, geo, color: new THREE.Color(css(ROLE_COLOR[B.role])), trails: [] };
+  });
+  emdb.views.forEach(v => {
+    clearView(v);
+    for (const b of emdb.bodies) { const m = bodyMesh(b.geo, b.color); v.scene.add(m); v.objs.push(m);
+      const [t0, t1] = trailLine(b.B, clip.n, b.color); v.scene.add(t0, t1); v.objs.push(t0, t1); b.trails.push(t1); }
+    sizeFloor(v, clip);
+  });
+  loads.forEach(l => l.hidden = true);
+  const meta = EMDB.find(e => e.id === id);
+  document.getElementById("emdbLegend").innerHTML =
+    `<span>Mean root (pelvis) error over the sequence: <span class="swatch" style="background:var(--base)"></span>w/o GravHMR <b>${meta.wo.toFixed(2)} m</b></span>
+     <span><span class="swatch" style="background:var(--ours)"></span>w/ GravHMR <b>${meta.w.toFixed(2)} m</b></span><span>Lines on the floor trace each root path.</span>`;
+  emdb.player.load(clip, `data/${id}.mp4`);
+}
+function updateEmdb(f) {
+  if (!emdb.clip) return;
+  for (const b of emdb.bodies) { skin(b.B, f, b.geo.attributes.position.array); b.geo.attributes.position.needsUpdate = true; b.geo.computeVertexNormals(); b.trails.forEach(t => t.geometry.setDrawRange(0, f + 1)); }
+  emdb.views.forEach((v, i) => { const B = emdb.bodies[i].B; v.target.set(B.root[f * 3], B.root[f * 3 + 1], B.root[f * 3 + 2]); v.dirty = true; });
+}
+
+// ---------------- chips ----------------
+function chips(el, list, label, sub, onPick) {
+  el.innerHTML = list.map(c => `<button type="button" class="chip" data-id="${c.id}" aria-pressed="false"><img src="data/${c.id}.jpg" alt="" loading="lazy"><span>${label(c)}<small>${sub(c)}</small></span></button>`).join("");
+  el.addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) onPick(b.dataset.id); });
+}
+chips(document.getElementById("wildChips"), WILD, c => c.sport, c => c.id.split("-")[0], selectWild);
+chips(document.getElementById("emdbChips"), EMDB, c => c.name, c => c.id.slice(0, 5), selectEmdb);
+
+// ---------------- render loop: only sections on screen ----------------
+const visible = new Set();
+const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target.id) : visible.delete(e.target.id)), { rootMargin: "100px" });
+io.observe(document.getElementById("wildViewer")); io.observe(document.getElementById("emdbViewer"));
+const started = { wild: false, emdb: false };
+let lastOrbit = { w: -1, e: -1 };
+function loop() {
+  if (visible.has("wildViewer")) {
+    if (!started.wild) { started.wild = true; selectWild(WILD[0].id); }
+    wild.player.tick();
+    if (wild.view.dirty || lastOrbit.w !== wildOrbit.v) { placeCamera(wild.view); wild.view.renderer.render(wild.view.scene, wild.view.camera); wild.view.dirty = false; lastOrbit.w = wildOrbit.v; }
+  } else if (started.wild && !wild.player.video.paused) wild.player.video.pause();
+  if (visible.has("emdbViewer")) {
+    if (!started.emdb) { started.emdb = true; selectEmdb(EMDB[0].id); }
+    emdb.player.tick();
+    const moved = lastOrbit.e !== emdbOrbit.v;
+    emdb.views.forEach(v => { if (v.dirty || moved) { placeCamera(v); v.renderer.render(v.scene, v.camera); v.dirty = false; } }); lastOrbit.e = emdbOrbit.v;
+  } else if (started.emdb && !emdb.player.video.paused) emdb.player.video.pause();
+  // resume a player that was paused only because it scrolled away
+  for (const [k, P, id] of [["wild", wild.player, "wildViewer"], ["emdb", emdb.player, "emdbViewer"]])
+    if (started[k] && visible.has(id) && P.playing && P.video.paused && P.video.readyState >= 2 && !P.video.ended) P.video.play().catch(() => {});
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>

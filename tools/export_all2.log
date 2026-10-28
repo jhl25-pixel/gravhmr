@@ -1,0 +1,17 @@
+25021-720 cached
+4568-1080 cached
+48371-720 cached
+6667-720 cached
+  GravHMR (ours): lbs vs mesh 4.2 mm
+7595-720: 584 frames @ 25.00 fps, video 584 frames, bin 0.53 MB, mp4 5.07 MB
+7869-720 cached
+14048-720 cached
+21477-720 cached
+24436-720 cached
+  Ground truth: lbs vs mesh 4.1 mm
+  w/o GravHMR: lbs vs mesh 2.1 mm
+  w/ GravHMR: lbs vs mesh 2.0 mm
+P8_64_outdoor_skateboard: 1704 frames @ 30.00 fps, video 1704 frames, bin 2.66 MB, mp4 3.56 MB
+P5_40_indoor_walk_big_circle cached
+P9_79_outdoor_walk_rectangle cached
+ALLDONE
