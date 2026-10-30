@@ -16,7 +16,7 @@
 :root {
   --bg: #f5f7fa; --surface: #ffffff; --ink: #141a24; --muted: #5b6676; --line: #dde3eb;
   --ours: #2f6fde; --base: #cf4b3f; --gt: #8e98a6; --cam: #e08a2e;
-  --stage: #eef2f6; --stage-floor: #fbfcfd;
+  --stage: #eef2f6; --stage-floor: #fbfcfd; --logo-bg: transparent;
   --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -25,11 +25,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
   --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
-  --stage: #1a2029; --stage-floor: #5d6878; color-scheme: dark } }
+  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
   --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
-  --stage: #1a2029; --stage-floor: #5d6878; color-scheme: dark }
+  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; color-scheme: dark }
 
 * { box-sizing: border-box }
 [hidden] { display: none !important }
@@ -50,8 +50,12 @@ a { color: var(--ours) }
 
 /* ---------- header ---------- */
 header { padding-block: 3.6rem 1.2rem; text-align: center }
-.logos { display: flex; justify-content: center; align-items: center; gap: 2.6rem; margin-bottom: 1.8rem }
-.logo { height: 60px; width: auto; object-fit: contain }
+.logos { display: flex; justify-content: center; align-items: center; gap: 2.2rem; margin-top: 1.1rem }
+.logo { height: 34px; width: auto; object-fit: contain }
+.logo[src$="tsinghua.png"] { height: 44px }
+.logo[src$="tencent_games.png"] { height: 38px }
+/* both marks are drawn for light grounds: on a dark page they sit on one light chip */
+.logos { padding: .55rem 1.2rem; border-radius: 12px; width: fit-content; margin-inline: auto; background: var(--logo-bg) }
 .authors { margin-top: 1.4rem }
 .author-row { margin-bottom: .5rem }
 .author-row span { margin: 0 .8rem; white-space: nowrap }
@@ -158,10 +162,6 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 </style>
 
 <header class="col">
-  <div class="logos">
-    <img src="assets/logos/tsinghua.png" alt="Tsinghua University" class="logo">
-    <img src="assets/logos/tencent.svg" alt="Tencent" class="logo">
-  </div>
   <h1 class="title">Grav<span class="g">HMR</span></h1>
   <p class="tagline">World-grounded human motion by coupling SLAM and human mesh recovery in a shared gravity frame</p>
   <div class="authors">
@@ -183,6 +183,11 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
       <p><sup>3</sup>Shenzhen Technology University</p>
     </div>
     <p class="contrib"><sup>*</sup>Equal contribution &nbsp; <sup>‡</sup>Project Lead &nbsp; <sup>†</sup>Corresponding author</p>
+    <div class="logos">
+    <img src="assets/logos/tsinghua.png" alt="Tsinghua University" class="logo">
+    <img src="assets/logos/tencent_games.png" alt="Tencent Games" class="logo">
+    </div>
+
   </div>
   <nav class="links" aria-label="Paper links">
     <span title="Available after review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>Paper (coming soon)</span>
