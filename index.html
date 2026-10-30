@@ -43,7 +43,15 @@ a { color: var(--ours) }
 
 /* ---------- header ---------- */
 header { padding-block: 3.6rem 1.2rem; text-align: center }
-header .tagline, header .authors { max-width: 44rem; margin-inline: auto }
+.logos { display: flex; justify-content: center; align-items: center; gap: 2.6rem; margin-bottom: 1.8rem }
+.logo { height: 60px; width: auto; object-fit: contain }
+.authors { margin-top: 1.4rem }
+.author-row { margin-bottom: .5rem }
+.author-row span { margin: 0 .8rem; white-space: nowrap }
+.affil-row { margin-top: .7rem; font-size: .88rem; color: var(--muted) }
+.affil-row p { margin: .25rem 0 }
+.contrib { margin-top: .4rem; font-size: .84rem; color: var(--muted) }
+header .tagline { max-width: 44rem; margin-inline: auto }
 .title { font-size: clamp(2.6rem, 1.6rem + 4.5vw, 4.6rem); font-weight: 700; letter-spacing: -.035em; line-height: 1 }
 .title .g { position: relative; color: var(--ours) }
 .tagline { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.1rem, .95rem + .7vw, 1.45rem);
@@ -143,9 +151,32 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 </style>
 
 <header class="col">
+  <div class="logos">
+    <img src="assets/logos/tsinghua.png" alt="Tsinghua University" class="logo">
+    <img src="assets/logos/tencent.svg" alt="Tencent" class="logo">
+  </div>
   <h1 class="title">Grav<span class="g">HMR</span></h1>
   <p class="tagline">World-grounded human motion by coupling SLAM and human mesh recovery in a shared gravity frame</p>
-  <p class="authors">Anonymous authors · Under review</p>
+  <div class="authors">
+    <div class="author-row">
+      <span>Hanglei Jin<sup>1,2,*,§</sup></span>
+      <span>Chenglu Sun<sup>2,*,‡</sup></span>
+      <span>Junchen Ge<sup>1</sup></span>
+      <span>Yuchao Wang<sup>2</sup></span>
+    </div>
+    <div class="author-row">
+      <span>Siqi Chen<sup>1</sup></span>
+      <span>Yuzhi Huang<sup>1</sup></span>
+      <span>Jingyan Jiang<sup>3</sup></span>
+      <span>Zhi Wang<sup>1,†</sup></span>
+    </div>
+    <div class="affil-row">
+      <p><sup>1</sup>Shenzhen International Graduate School, Tsinghua University</p>
+      <p><sup>2</sup>Tencent D-Live</p>
+      <p><sup>3</sup>Shenzhen Technology University</p>
+    </div>
+    <p class="contrib"><sup>*</sup>Equal contribution &nbsp; <sup>‡</sup>Project Lead &nbsp; <sup>†</sup>Corresponding author</p>
+  </div>
   <nav class="links" aria-label="Paper links">
     <span title="Available after review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>Paper (coming soon)</span>
     <span title="Available after review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></svg>Code (coming soon)</span>
