@@ -166,8 +166,13 @@ if a.mode == "wild":
     r = open(f"{a.root}/frames/{n}/fps.txt").read().strip().split("/"); fps = float(r[0]) / (float(r[1]) if len(r) > 1 else 1)
     imgs = sorted(glob.glob(f"{a.root}/frames/{n}/images/*.jpg"))
     assert len(imgs) >= L, (len(imgs), L)
+    # local ground height under the subject: per-frame lowest vertex, min over +-0.5 s (drops flight phases),
+    # then smoothed. The page draws the floor at this height so a sloped path never buries the body.
+    from scipy.ndimage import minimum_filter1d, gaussian_filter1d
+    lo = np.concatenate([B.verts(np.arange(i, min(L, i + 256)))[:, :, 1].min(1) for i in range(0, L, 256)])
+    ground = gaussian_filter1d(minimum_filter1d(lo, size=max(3, int(round(fps)) | 1), mode="nearest"), sigma=fps / 4, mode="nearest")
     write(cid, [("GravHMR (ours)", "ours", B)], np.arange(L), fps, imgs[:L],
-          {"cam_pos": (cam_p, np.float32), "cam_quat": (cam_q, np.float32)})
+          {"cam_pos": (cam_p, np.float32), "cam_quat": (cam_q, np.float32), "ground_y": (ground, np.float32)})
 else:
     s = a.seq; cid = a.id or s
     Lb = torch.load(f"{H}/GVHMR_official/inputs/EMDB/hmr4d_support/emdb_vit_v4.pt", map_location="cpu", weights_only=False)[s]

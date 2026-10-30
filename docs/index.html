@@ -32,20 +32,25 @@
   --stage: #1a2029; --stage-floor: #5d6878; color-scheme: dark }
 
 * { box-sizing: border-box }
-body { background: var(--bg); color: var(--ink); font: 400 1rem/1.65 var(--f-body);
+[hidden] { display: none !important }
+body { background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.65 var(--f-body);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.col { max-width: var(--col); margin-inline: auto }
+.col { max-width: var(--wide); margin-inline: auto }
+.col > p, .lede, .note { max-width: none; text-align: justify; hyphens: auto; -webkit-hyphens: auto }
+.abstract p { font-size: 1.16rem; line-height: 1.7 }
+.lede { font-size: 1.06rem }
 .wide { max-width: var(--wide); margin-inline: auto }
 section { padding-block: 3.2rem 0 }
 h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0 }
 h2 { font-size: clamp(1.45rem, 1.1rem + 1.2vw, 1.9rem); font-weight: 700; letter-spacing: -.01em }
-h2 + p.lede { color: var(--muted); margin: .5rem 0 1.4rem; max-width: 46rem }
+h2 + p.lede { color: var(--muted); margin: .5rem 0 1.4rem }
 p { margin: 0 0 1rem }
 a { color: var(--ours) }
 :focus-visible { outline: 2px solid var(--ours); outline-offset: 2px; border-radius: 4px }
 
 /* ---------- header ---------- */
 header { padding-block: 3.6rem 1.2rem; text-align: center }
+header .tagline, header .authors { max-width: 44rem; margin-inline: auto }
 .title { font-size: clamp(2.6rem, 1.6rem + 4.5vw, 4.6rem); font-weight: 700; letter-spacing: -.035em; line-height: 1 }
 .title .g { position: relative; color: var(--ours) }
 .tagline { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.1rem, .95rem + .7vw, 1.45rem);
@@ -61,10 +66,11 @@ header { padding-block: 3.6rem 1.2rem; text-align: center }
 figure { margin: 0 }
 figure img { display: block; width: 100%; height: auto; border-radius: 10px; background: #fff }
 figcaption { color: var(--muted); font-size: .9rem; margin-top: .7rem; line-height: 1.5 }
-.teaser { max-width: 46rem; margin: 1.6rem auto 0 }
+.method-fig { max-width: 62rem; margin-inline: auto }
+.teaser { max-width: 56rem; margin: 1.8rem auto 0 }
 
 /* ---------- abstract ---------- */
-.abstract p { font-size: 1.06rem }
+
 .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 1.4rem }
 .point { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.2rem }
 .point h3 { font-size: 1.08rem; margin-bottom: .4rem }
@@ -105,6 +111,8 @@ figcaption { color: var(--muted); font-size: .9rem; margin-top: .7rem; line-heig
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
 .seg button { border: 0; background: transparent; color: var(--muted); font: 500 .8rem var(--f-mono); padding: .35rem .55rem; cursor: pointer }
 .seg button[aria-pressed="true"] { background: var(--ours); color: #fff }
+.dist { font: 500 .82rem var(--f-mono); color: var(--ink); font-variant-numeric: tabular-nums }
+.dist.corner { position: absolute; left: .6rem; bottom: .55rem; z-index: 2; pointer-events: none; color: var(--muted) }
 .toggle { display: inline-flex; align-items: center; gap: .35rem; font-size: .84rem; color: var(--muted); cursor: pointer }
 .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; padding: .7rem .9rem; border-top: 1px solid var(--line); font-size: .85rem; color: var(--muted) }
 .legend b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums }
@@ -153,17 +161,17 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
   </nav>
   <figure class="teaser">
     <img src="assets/teaser.png" alt="Input frame, TRAM with a 32 degree tilt error, and GravHMR with a 9 degree tilt error against the ground-truth body; below, the accumulated motion of each.">
-    <figcaption>TRAM maps the body into the camera and then the camera into the world, so camera-frame body errors become world-frame tilt (32°). GravHMR refines the HMR body directly in the SLAM world (9°).</figcaption>
+    <figcaption>TRAM and GravHMR on the same sequence. Relative to the ground-truth body orientation, TRAM has a 32° tilt error and GravHMR has a 9° tilt error. The lower panels show their accumulated motion.</figcaption>
   </figure>
 </header>
 
 <main>
 <section class="col abstract" id="abstract">
   <h2>Abstract</h2>
-  <p>A monocular human mesh recovery (HMR) model sees the body well but cannot tell where it is going: its global trajectory drifts as soon as the camera moves. A SLAM system has the opposite strengths. GravHMR is a training-free, plug-and-play refinement that couples the two. It takes the camera trajectory from SLAM and the body from an off-the-shelf HMR model, and refines the motion directly in the metric SLAM world.</p>
-  <p>On EMDB-2, GravHMR reaches 154.0&nbsp;mm W-MPJPE<sub>100</sub> with ViPE and 189.8&nbsp;mm with masked DROID-SLAM, against 222.4&nbsp;mm for TRAM on the same masked DROID camera. With the same HMR backbone it lowers the error by 44.3% over GVHMR.</p>
+  <p>Recovering human motion in world coordinates from a moving-camera video requires accurate estimates of both body motion and camera motion. Errors in either estimate accumulate in the reconstructed trajectory. GravHMR is a training-free refinement that combines camera poses from SLAM with predictions from an off-the-shelf HMR model. It aligns body orientation in a shared gravity frame and refines the root trajectory in the SLAM world.</p>
+  <p>On EMDB-2, GravHMR reaches 154.0&nbsp;mm W-MPJPE<sub>100</sub> with ViPE. With the same masked DROID-SLAM camera estimates and ground-truth intrinsics as TRAM, it reaches 189.8&nbsp;mm, against 222.4&nbsp;mm for TRAM. With the same HMR backbone, it reduces the error of GVHMR (276.5&nbsp;mm) by 44.3%.</p>
   <div class="points">
-    <div class="point"><div class="k">SLAM coupling</div><h3>SLAM supplies the trajectory</h3><p>The body orientation follows the SLAM camera rotation, and the root is lifted along each 2D keypoint ray with the HMR depth. A short optimization keeps the root consistent with reprojection and the HMR's own body velocity.</p></div>
+    <div class="point"><div class="k">SLAM coupling</div><h3>SLAM supplies the trajectory</h3><p>SLAM camera rotations place camera-frame body estimates in a common world frame. The root is lifted along each 2D keypoint ray with the HMR depth. A short optimization keeps the root consistent with reprojection and the HMR's own body velocity.</p></div>
     <div class="point"><div class="k">Shared gravity axis</div><h3>One vertical for camera and body</h3><p>We express SLAM and HMR around a shared gravity axis: heading is resolved about that axis, and an image-based gravity estimate stands the SLAM world upright, independent of the HMR backbone.</p></div>
   </div>
   <div class="stats" aria-label="Headline numbers on EMDB-2">
@@ -176,36 +184,36 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 <section class="col" id="method">
   <h2>Method</h2>
   <p class="lede">An HMR backbone gives the body in the camera frame; a SLAM backbone gives the camera in the world. GravHMR aligns body orientation about gravity, then recovers the root trajectory in the SLAM world.</p>
-  <figure><img src="assets/pipeline.png" alt="Pipeline: an HMR backbone and a SLAM backbone run on the input video; step one aligns orientation about the gravity axis, step two recovers the root trajectory in the SLAM world."></figure>
+  <figure class="method-fig"><img src="assets/pipeline.png" alt="Pipeline: an HMR backbone and a SLAM backbone run on the input video; step one aligns orientation about the gravity axis, step two recovers the root trajectory in the SLAM world."></figure>
 </section>
 
 <section class="wide" id="wild">
-  <div class="col" style="max-width:var(--col)">
+  <div class="col">
     <h2>In-the-wild videos</h2>
-    <p class="lede">Sports clips from the internet, camera estimated with ViPE, no ground truth. Drag to orbit around the body, scroll or middle-drag to zoom; the view follows the subject. The orange frustum is the estimated camera.</p>
+    <p class="lede">In-the-wild videos with camera poses estimated by ViPE. No ground-truth trajectories are available. The floor grid is 1&nbsp;m and follows the ground height under the subject.</p>
   </div>
   <div class="viewer wild" id="wildViewer">
     <div class="chips" role="group" aria-label="Choose a clip" id="wildChips"></div>
     <div class="stagewrap">
       <div class="pane video"><span class="tag">Input video</span><video id="wildVideo" muted playsinline preload="auto"></video></div>
-      <div class="pane" id="wildPane"><span class="tag"><i style="background:var(--ours)"></i>GravHMR, world frame</span><span class="hint">drag · scroll</span><div class="loading" id="wildLoading">Loading…</div></div>
+      <div class="pane" id="wildPane"><span class="tag"><i style="background:var(--ours)"></i>GravHMR, world frame</span><span class="hint">Drag to rotate</span><div class="loading" id="wildLoading">Loading…</div></div>
     </div>
     <div class="bar" id="wildBar"></div>
   </div>
 </section>
 
 <section class="wide" id="emdb">
-  <div class="col" style="max-width:var(--col)">
+  <div class="col">
     <h2>Without and with GravHMR on EMDB</h2>
-    <p class="lede">The same HMR backbone (GVHMR with PVA-Net keypoints) before and after GravHMR, next to the ground truth. Each view follows one body; the three views rotate together. Predictions are aligned to the ground truth once, on the first 100 frames, so later drift stays visible.</p>
+    <p class="lede">GVHMR with PVA-Net keypoints, before and after GravHMR refinement, compared with ground truth. Predictions are aligned once using the first 100 frames; subsequent drift remains visible.</p>
   </div>
   <div class="viewer emdb" id="emdbViewer">
     <div class="chips" role="group" aria-label="Choose a sequence" id="emdbChips"></div>
     <div class="stagewrap">
       <div class="pane video"><span class="tag">Input video</span><video id="emdbVideo" muted playsinline preload="auto"></video></div>
-      <div class="pane" id="emdbPane0"><span class="tag"><i style="background:var(--gt)"></i>Ground truth</span><div class="loading">Loading…</div></div>
-      <div class="pane" id="emdbPane1"><span class="tag"><i style="background:var(--base)"></i>w/o GravHMR</span><div class="loading">Loading…</div></div>
-      <div class="pane" id="emdbPane2"><span class="tag"><i style="background:var(--ours)"></i>w/ GravHMR</span><span class="hint">drag · scroll</span><div class="loading">Loading…</div></div>
+      <div class="pane" id="emdbPane0"><span class="dist corner"></span><span class="tag"><i style="background:var(--gt)"></i>Ground truth</span><div class="loading">Loading…</div></div>
+      <div class="pane" id="emdbPane1"><span class="dist corner"></span><span class="tag"><i style="background:var(--base)"></i>w/o GravHMR</span><div class="loading">Loading…</div></div>
+      <div class="pane" id="emdbPane2"><span class="dist corner"></span><span class="tag"><i style="background:var(--ours)"></i>w/ GravHMR</span><span class="hint">Drag to rotate</span><div class="loading">Loading…</div></div>
     </div>
     <div class="bar" id="emdbBar"></div>
     <div class="legend" id="emdbLegend"></div>
@@ -213,7 +221,7 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 </section>
 
 <section class="wide" id="results">
-  <div class="col" style="max-width:var(--col)">
+  <div class="col">
     <h2>Main results</h2>
     <p class="lede">Global human motion on EMDB-2 and RICH. WA-MPJPE<sub>100</sub>, W-MPJPE<sub>100</sub> and FS in mm, RTE in %, Jitter in 10&nbsp;m/s³. Lower is better. <strong>Bold</strong> is best and <u>underlined</u> is second best per column.</p>
   </div>
@@ -227,7 +235,7 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
       <tbody></tbody>
     </table>
   </div>
-  <p class="note col" style="max-width:var(--col)">Ours w/ ViPE uses estimated camera poses and intrinsics. On EMDB-2, ours w/ masked DROID uses the same camera estimates and ground-truth intrinsics as TRAM.</p>
+  <p class="note">Ours w/ ViPE uses estimated camera poses and intrinsics. On EMDB-2, ours w/ masked DROID uses the same camera estimates and ground-truth intrinsics as TRAM.</p>
 </section>
 
 <section class="col" id="citation">
@@ -242,24 +250,23 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 }</pre></div>
 </section>
 </main>
-<footer>GravHMR project page · Interactive results rendered in your browser with three.js</footer>
+<footer>GravHMR project page</footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="assets/vendor/three.min.js"></script>
 <script>
 "use strict";
 // ---------------- data ----------------
 const WILD = [
-  { id: "7595-720",  sport: "Running" },      { id: "7869-720",  sport: "Running" },
-  { id: "6667-720",  sport: "Running" },      { id: "25021-720", sport: "Skateboarding" },
+  { id: "6667-720",  sport: "Running" },       { id: "25021-720", sport: "Skateboarding" },
   { id: "4568-1080", sport: "Skateboarding" }, { id: "48371-720", sport: "Skating" },
-  { id: "14048-720", sport: "Cycling" },      { id: "21477-720", sport: "Cycling" },
-  { id: "24436-720", sport: "Cycling" },
+  { id: "21477-720", sport: "Cycling" },
 ];
 // root error = mean pelvis error over the sequence after one Sim3 on the first 100 frames (m)
 const EMDB = [
-  { id: "P8_64_outdoor_skateboard",     name: "Skateboarding", wo: 18.89, w: 0.84 },
-  { id: "P5_40_indoor_walk_big_circle", name: "Big circle",    wo: 3.40,  w: 0.63 },
-  { id: "P9_79_outdoor_walk_rectangle", name: "Rectangle",     wo: 2.51,  w: 0.60 },
+  { id: "P8_64_outdoor_skateboard",     name: "Skateboarding", wo: 18.89, w: 0.83 },
+  { id: "P7_58_outdoor_parcours",       name: "Parcours",      wo: 2.54,  w: 0.79 },
+  { id: "P7_56_outdoor_stairs_up_down", name: "Stairs",        wo: 1.79,  w: 0.36 },
+  { id: "P9_79_outdoor_walk_rectangle", name: "Rectangle",     wo: 2.50,  w: 0.60 },
 ];
 const TABLE = [ // EMDB-2: WA, W, RTE, Jitter, FS | RICH: WA, W, RTE, Jitter, FS
   ["SLAHMR", 326.9, 776.1, 10.2, null, null, 98.1, 186.4, 28.9, 34.3, 5.1],
@@ -323,6 +330,10 @@ async function loadClip(id) {
     });
     const clip = { id, n: h.frames, fps: h.fps, faces, bodies };
     if (h.cam_pos) { clip.camPos = A(h.cam_pos); clip.camQuat = A(h.cam_quat); }
+    if (h.ground_y) clip.ground = A(h.ground_y);
+    // horizontal distance travelled by each body's root, cumulative per frame (m)
+    for (const B of bodies) { B.dist = new Float32Array(clip.n);
+      for (let f = 1; f < clip.n; f++) B.dist[f] = B.dist[f - 1] + Math.hypot(B.root[f * 3] - B.root[f * 3 - 3], B.root[f * 3 + 2] - B.root[f * 3 - 1]); }
     return clip;
   })();
   cache.set(id, p); p.catch(() => cache.delete(id)); return p;
@@ -368,9 +379,12 @@ function skin(B, f, out) {
 
 // ---------------- 3D view: scene per pane, camera orbits a moving target ----------------
 function gridTexture() {
-  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d");
-  g.fillStyle = "#fff"; g.fillRect(0, 0, 256, 256); g.strokeStyle = "rgba(0,0,0,.22)"; g.lineWidth = 3; g.strokeRect(0, 0, 256, 256);
-  g.strokeStyle = "rgba(0,0,0,.10)"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(128, 0); g.lineTo(128, 256); g.moveTo(0, 128); g.lineTo(256, 128); g.stroke();
+  // one tile = 5 m x 5 m: thin lines every 1 m, a darker line every 5 m, so distance can be read off the floor
+  const c = document.createElement("canvas"); c.width = c.height = 500; const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, 500, 500);
+  g.strokeStyle = "rgba(0,0,0,.13)"; g.lineWidth = 2; g.beginPath();
+  for (let i = 100; i < 500; i += 100) { g.moveTo(i, 0); g.lineTo(i, 500); g.moveTo(0, i); g.lineTo(500, i); } g.stroke();
+  g.strokeStyle = "rgba(0,0,0,.34)"; g.lineWidth = 5; g.strokeRect(0, 0, 500, 500);
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
 }
 const GRID = gridTexture();
@@ -399,6 +413,7 @@ function makeView(pane, orbit) {
 }
 // orbit state {theta, phi, r} may be shared by several views (EMDB rotates them together)
 function attachOrbit(el, o) {
+  el.addEventListener("pointerdown", () => document.querySelectorAll(".hint").forEach(h => h.hidden = true), { once: true });
   const pts = new Map(); let pinch0 = 0, r0 = 0;
   el.addEventListener("pointerdown", e => { el.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY, b: e.button });
     if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); r0 = o.r; } });
@@ -427,12 +442,13 @@ function sizeFloor(view, clip) {
   for (const B of clip.bodies) for (let f = 0; f < clip.n; f++) { const x = B.root[f * 3], z = B.root[f * 3 + 2]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
   const m = 25, w = Math.ceil(x1 - x0 + 2 * m), d = Math.ceil(z1 - z0 + 2 * m);
   view.floor.scale.set(w, d, 1); view.floor.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
-  const tex = GRID.clone(); tex.needsUpdate = true; tex.repeat.set(w, d); tex.offset.set(((x0 + x1) / 2 - w / 2) % 1, 0);
+  const tex = GRID.clone(); tex.needsUpdate = true; tex.repeat.set(w / 5, d / 5);
+  tex.offset.set((((x0 + x1) / 2 - w / 2) / 5) % 1, (((-(z0 + z1) / 2) - d / 2) / 5) % 1);   // lines on whole metres
   view.floorMat.map = tex; view.floorMat.needsUpdate = true;
 }
-function trailLine(B, n, color) {
+function trailLine(B, n, color, ground) {
   const pos = new Float32Array(n * 3);
-  for (let f = 0; f < n; f++) { pos[f * 3] = B.root[f * 3]; pos[f * 3 + 1] = .012; pos[f * 3 + 2] = B.root[f * 3 + 2]; }
+  for (let f = 0; f < n; f++) { pos[f * 3] = B.root[f * 3]; pos[f * 3 + 1] = (ground ? ground[f] : 0) + .015; pos[f * 3 + 2] = B.root[f * 3 + 2]; }
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   const full = new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: .28 }));
   const done = new THREE.Line(g, new THREE.LineBasicMaterial({ color })); done.renderOrder = 1;
@@ -465,7 +481,13 @@ function makePlayer(video, barEl, extra, onFrame) {
   const ui = makeBar(barEl, extra), P = { clip: null, f: 0, speed: 1, playing: true, video, ui };
   const setIcon = () => { ui.play.innerHTML = P.playing ? ICON_PAUSE : ICON_PLAY; ui.play.setAttribute("aria-label", P.playing ? "Pause" : "Play"); };
   ui.play.addEventListener("click", () => { P.playing = !P.playing; setIcon(); P.playing ? video.play().catch(() => {}) : video.pause(); });
-  ui.range.addEventListener("input", () => { P.f = +ui.range.value; video.currentTime = (P.f + .5) / P.clip.fps; P.show(); });
+  // while scrubbing the slider owns the frame; the video only follows, and tick() leaves it alone until the seek lands
+  const seekTo = f => { P.f = f; P.seeking = true; video.currentTime = (f + .5) / P.clip.fps; P.show(); };
+  ui.range.addEventListener("pointerdown", () => { P.scrub = true; });
+  ui.range.addEventListener("input", () => seekTo(+ui.range.value));
+  const endScrub = () => { P.scrub = false; };
+  ui.range.addEventListener("pointerup", endScrub); ui.range.addEventListener("change", endScrub);
+  video.addEventListener("seeked", () => { P.seeking = false; });
   ui.seg.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; P.speed = +b.dataset.s; video.playbackRate = P.speed;
     ui.seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); });
   video.addEventListener("ended", () => { video.currentTime = 0; if (P.playing) video.play().catch(() => {}); });
@@ -474,7 +496,7 @@ function makePlayer(video, barEl, extra, onFrame) {
   P.show = () => { const c = P.clip; if (!c) return; ui.range.value = P.f; ui.time.textContent = `${(P.f / c.fps).toFixed(1)} s / ${((c.n - 1) / c.fps).toFixed(1)} s`; onFrame(P.f); };
   P.tick = () => {
     if (!P.clip) return;
-    if (P.playing && !video.paused) { const f = Math.min(P.clip.n - 1, Math.floor(video.currentTime * P.clip.fps + 1e-3)); if (f !== P.f) { P.f = f; P.show(); } }
+    if (P.playing && !video.paused && !P.scrub && !P.seeking) { const f = Math.min(P.clip.n - 1, Math.floor(video.currentTime * P.clip.fps + 1e-3)); if (f !== P.f) { P.f = f; P.show(); } }
   };
   setIcon(); return P;
 }
@@ -483,7 +505,7 @@ function makePlayer(video, barEl, extra, onFrame) {
 const wildOrbit = { theta: 2.4, phi: 1.12, r: 5, v: 0 };
 const wild = { view: makeView(document.getElementById("wildPane"), wildOrbit), clip: null, meshes: [], loading: document.getElementById("wildLoading") };
 wild.player = makePlayer(document.getElementById("wildVideo"), document.getElementById("wildBar"),
-  `<label class="toggle"><input type="checkbox" id="wildCam" checked> camera</label>`, f => updateWild(f));
+  `<span class="dist" id="wildDist">Subject travel: 0.0 m</span><label class="toggle"><input type="checkbox" id="wildCam" checked> camera</label>`, f => updateWild(f));
 document.getElementById("wildCam").addEventListener("change", () => updateWild(wild.player.f));
 async function selectWild(id) {
   document.querySelectorAll("#wildChips .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.id === id));
@@ -494,7 +516,7 @@ async function selectWild(id) {
   for (const B of clip.bodies) {
     const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(B.nV * 3), 3)); geo.setIndex(new THREE.BufferAttribute(clip.faces, 1));
     const m = bodyMesh(geo, ours); v.scene.add(m); v.objs.push(m); wild.meshes.push({ B, geo, m });
-    const [a, b] = trailLine(B, clip.n, ours); v.scene.add(a, b); v.objs.push(a, b); wild.trail = b;
+    const [a, b] = trailLine(B, clip.n, ours, clip.ground); v.scene.add(a, b); v.objs.push(a, b); wild.trail = b;
   }
   if (clip.camPos) {
     const fr = frustum(cam); v.scene.add(fr); v.objs.push(fr); wild.fr = fr;
@@ -509,6 +531,8 @@ function updateWild(f) {
   for (const { B, geo } of wild.meshes) { skin(B, f, geo.attributes.position.array); geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere(); }
   const B = c.bodies[0]; wild.view.target.set(B.root[f * 3], B.root[f * 3 + 1], B.root[f * 3 + 2]);
   wild.trail.geometry.setDrawRange(0, f + 1);
+  if (c.ground) wild.view.floor.position.y = c.ground[f];
+  document.getElementById("wildDist").textContent = `Subject travel: ${B.dist[f].toFixed(1)} m`;
   const show = document.getElementById("wildCam").checked;
   if (wild.fr) { wild.fr.visible = wild.camLine.visible = show;
     wild.fr.position.set(c.camPos[f * 3], c.camPos[f * 3 + 1], c.camPos[f * 3 + 2]);
@@ -545,7 +569,8 @@ async function selectEmdb(id) {
 function updateEmdb(f) {
   if (!emdb.clip) return;
   for (const b of emdb.bodies) { skin(b.B, f, b.geo.attributes.position.array); b.geo.attributes.position.needsUpdate = true; b.geo.computeVertexNormals(); b.trails.forEach(t => t.geometry.setDrawRange(0, f + 1)); }
-  emdb.views.forEach((v, i) => { const B = emdb.bodies[i].B; v.target.set(B.root[f * 3], B.root[f * 3 + 1], B.root[f * 3 + 2]); v.dirty = true; });
+  emdb.views.forEach((v, i) => { const B = emdb.bodies[i].B; v.target.set(B.root[f * 3], B.root[f * 3 + 1], B.root[f * 3 + 2]); v.dirty = true;
+    const t = v.pane.querySelector(".dist"); if (t) t.textContent = `Travel: ${B.dist[f].toFixed(1)} m`; });
 }
 
 // ---------------- chips ----------------
