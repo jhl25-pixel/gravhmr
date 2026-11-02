@@ -30,7 +30,7 @@
 :root {
   --bg: #f5f7fa; --surface: #ffffff; --ink: #141a24; --muted: #5b6676; --line: #dde3eb;
   --ours: #2f6fde; --base: #cf4b3f; --gt: #8e98a6; --cam: #e08a2e;
-  --stage: #eef2f6; --stage-floor: #fbfcfd; --logo-bg: transparent; --logo-pad: 0px; --hero-filter: none;
+  --stage: #eef2f6; --stage-floor: #fbfcfd; --logo-bg: transparent; --logo-pad: 0px; --note: #fffdf8; --note-edge: rgba(20,26,36,.06); --hero-filter: none;
   --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -39,11 +39,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
   --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
-  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; --logo-pad: 2px; --hero-filter: brightness(.42) saturate(.9); color-scheme: dark } }
+  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; --logo-pad: 2px; --note: #1d232c; --note-edge: rgba(255,255,255,.06); --hero-filter: brightness(.42) saturate(.9); color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
   --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
-  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; --logo-pad: 2px; --hero-filter: brightness(.42) saturate(.9); color-scheme: dark }
+  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; --logo-pad: 2px; --note: #1d232c; --note-edge: rgba(255,255,255,.06); --hero-filter: brightness(.42) saturate(.9); color-scheme: dark }
 
 * { box-sizing: border-box }
 [hidden] { display: none !important }
@@ -70,7 +70,7 @@ a { color: var(--ours) }
 .hero-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; z-index: -2; filter: var(--hero-filter) }
 .hero-shade { position: absolute; inset: 0; z-index: -1;
   background: linear-gradient(to bottom, var(--bg) 0%, transparent 22%, transparent 78%, var(--bg) 100%) }
-.hero-content { padding: 2rem max(16px, env(safe-area-inset-left, 0px)); max-width: 60rem;
+.hero-content { padding: 2rem max(16px, env(safe-area-inset-left, 0px)); max-width: 60rem; will-change: transform;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--bg) 78%, transparent), transparent); border-radius: 50% }
 .masthead { text-align: center; padding-block: .6rem 0 }
 .title { font-size: clamp(2.8rem, 1.6rem + 5vw, 5rem); font-weight: 700; letter-spacing: -.035em; line-height: 1 }
@@ -111,9 +111,30 @@ figcaption { color: var(--muted); font-size: .9rem; margin-top: .7rem; line-heig
 .point h3 { font-size: 1.08rem; margin-bottom: .4rem }
 .point p { margin: 0; color: var(--muted); font-size: .95rem }
 .point .k { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ours) }
-.stats { display: flex; flex-wrap: wrap; gap: 1.2rem 2.4rem; margin-top: 1.6rem; padding-top: 1.2rem; border-top: 1px solid var(--line) }
-.stat b { display: block; font: 700 1.7rem/1.1 var(--f-display); font-variant-numeric: tabular-nums }
-.stat span { color: var(--muted); font-size: .86rem }
+/* headline numbers: three paper notes pinned to the page; each tilts a little and straightens on hover */
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr)); gap: 1.8rem 1.6rem; margin-top: 2.2rem; padding: .6rem .4rem 0 }
+.pinned { position: relative; margin: 0; background: var(--note); border-radius: 3px; padding: 1.35rem 1.25rem 1.15rem;
+  box-shadow: 0 1px 1px rgba(20,26,36,.06), 0 10px 22px -10px rgba(20,26,36,.28), inset 0 0 0 1px var(--note-edge);
+  transform: rotate(var(--tilt)); transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s }
+.pinned::after { content: ""; position: absolute; inset: auto 8% -6px 8%; height: 12px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(closest-side, rgba(20,26,36,.16), transparent) }
+.pinned:hover, .pinned:focus-within { transform: rotate(0) translateY(-3px); box-shadow: 0 1px 1px rgba(20,26,36,.06), 0 18px 30px -12px rgba(20,26,36,.32), inset 0 0 0 1px var(--note-edge) }
+.pin { position: absolute; left: .9rem; top: -.55rem; width: 1.15rem; height: 1.15rem; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8a7a 0 14%, #e5332a 38%, #a3150f 78%, #7d0d09 100%);
+  box-shadow: 0 2px 2px rgba(0,0,0,.25), 2px 5px 6px -2px rgba(0,0,0,.28) }
+.pin::before { content: ""; position: absolute; left: 50%; top: 82%; width: 2px; height: .5rem; transform: translateX(-50%) rotate(14deg);
+  background: linear-gradient(#9aa3ad, #5f6874); border-radius: 1px; z-index: -1 }
+.note-k { font: 500 .72rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem 1.4rem }
+.note-v { margin: 0; display: flex; align-items: baseline; gap: .35rem; font-variant-numeric: tabular-nums }
+.note-v b { font: 700 2.5rem/1 var(--f-display); letter-spacing: -.03em; color: var(--ours) }
+.note-v b.tram { font-size: 1.6rem; color: var(--base); text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: color-mix(in srgb, var(--base) 55%, transparent) }
+.note-v small { font: 500 .95rem var(--f-body); color: var(--muted) }
+.note-d { margin: .55rem 0 .9rem; font-size: .88rem; line-height: 1.45; color: var(--muted); text-align: left }
+.bars { display: grid; gap: .32rem }
+.bar { position: relative; display: block; height: 1.15rem; width: var(--w); border-radius: 2px; background: var(--gt); opacity: .55 }
+.bar.ours { background: var(--ours); opacity: 1 } .bar.tram { background: var(--base); opacity: .8 }
+.bar i { position: absolute; left: .45rem; top: 50%; transform: translateY(-50%); font: 500 .68rem var(--f-body); font-style: normal; color: #fff; white-space: nowrap }
+@media (prefers-reduced-motion: reduce) { .pinned { transition: none } }
 
 /* ---------- viewers ---------- */
 .viewer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden }
@@ -230,10 +251,37 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
     <div class="point"><div class="k">SLAM coupling</div><h3>SLAM supplies the trajectory</h3><p>SLAM camera rotations place camera-frame body estimates in a common world frame. The root is lifted along each 2D keypoint ray with the HMR depth. A short optimization keeps the root consistent with reprojection and the HMR's own body velocity.</p></div>
     <div class="point"><div class="k">Shared gravity axis</div><h3>One vertical for camera and body</h3><p>We express SLAM and HMR around a shared gravity axis: heading is resolved about that axis, and an image-based gravity estimate stands the SLAM world upright, independent of the HMR backbone.</p></div>
   </div>
-  <div class="stats" aria-label="Headline numbers on EMDB-2">
-    <div class="stat"><b>154.0 mm</b><span>W-MPJPE<sub>100</sub>, ViPE camera</span></div>
-    <div class="stat"><b>189.8 vs 222.4</b><span>ours vs TRAM, same masked DROID camera</span></div>
-    <div class="stat"><b>−44.3%</b><span>over GVHMR, same HMR backbone</span></div>
+  <div class="board" aria-label="Headline numbers, W-MPJPE100 on EMDB-2 (mm, lower is better)">
+    <figure class="pinned" style="--tilt:-1.6deg">
+      <span class="pin" aria-hidden="true"></span>
+      <figcaption class="note-k">ViPE camera</figcaption>
+      <p class="note-v"><b>154.0</b><small>mm</small></p>
+      <p class="note-d">W-MPJPE<sub>100</sub> on EMDB-2, against 192.4 for the best prior result</p>
+      <div class="bars" aria-hidden="true">
+        <span class="bar ours" style="--w:80.0%"><i>Ours</i></span>
+        <span class="bar prior" style="--w:100%"><i>GVHMR + HTD-Refine</i></span>
+      </div>
+    </figure>
+    <figure class="pinned" style="--tilt:1.1deg">
+      <span class="pin" aria-hidden="true"></span>
+      <figcaption class="note-k">Same masked DROID camera</figcaption>
+      <p class="note-v"><b>189.8</b><small>vs</small><b class="tram">222.4</b></p>
+      <p class="note-d">Ours against TRAM, with identical camera estimates and intrinsics</p>
+      <div class="bars" aria-hidden="true">
+        <span class="bar ours" style="--w:85.3%"><i>Ours</i></span>
+        <span class="bar tram" style="--w:100%"><i>TRAM</i></span>
+      </div>
+    </figure>
+    <figure class="pinned" style="--tilt:-.7deg">
+      <span class="pin" aria-hidden="true"></span>
+      <figcaption class="note-k">Same HMR backbone</figcaption>
+      <p class="note-v"><b>−44.3</b><small>%</small></p>
+      <p class="note-d">Error reduction over GVHMR, 276.5 → 154.0</p>
+      <div class="bars" aria-hidden="true">
+        <span class="bar ours" style="--w:55.7%"><i>Ours</i></span>
+        <span class="bar prior" style="--w:100%"><i>GVHMR</i></span>
+      </div>
+    </figure>
   </div>
 </section>
 
@@ -312,6 +360,14 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 <script src="assets/vendor/three.min.js"></script>
 <script>
 "use strict";
+// hero title follows the scroll one-for-one, and stops once its bottom reaches the author block
+(() => { const hero = document.querySelector(".hero"), c = hero && hero.querySelector(".hero-content"); if (!c) return;
+  const rm = matchMedia("(prefers-reduced-motion: reduce)"); let max = 0, ticking = false;
+  const measure = () => { c.style.transform = ""; max = Math.max(0, hero.offsetTop + hero.offsetHeight - (c.offsetTop + c.offsetHeight) - 8); update(); };
+  const update = () => { ticking = false; const y = rm.matches ? 0 : Math.min(Math.max(scrollY - hero.offsetTop, 0), max);
+    c.style.transform = y ? `translate3d(0, ${y}px, 0)` : ""; };
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener("resize", measure); addEventListener("load", measure); rm.addEventListener("change", update); measure(); })();
 (() => { const v = document.getElementById("heroVideo"); if (!v) return;
   const rm = matchMedia("(prefers-reduced-motion: reduce)");
   const apply = () => { if (rm.matches) { v.pause(); v.removeAttribute("autoplay"); } else v.play().catch(() => {}); };
