@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jhl25-pixel.github.io/gravhmr/sitemap.xml
