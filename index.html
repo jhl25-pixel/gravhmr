@@ -110,9 +110,9 @@ figcaption { color: var(--muted); font-size: .9rem; margin-top: .7rem; line-heig
 .note-v small { font: 500 .95rem var(--f-body); color: var(--muted) }
 .note-d { margin: .55rem 0 .9rem; font-size: .88rem; line-height: 1.45; color: var(--muted); text-align: left }
 .bars { display: grid; gap: .32rem }
-.bar { position: relative; display: block; height: 1.15rem; width: var(--w); border-radius: 2px; background: var(--gt); opacity: .55 }
-.bar.ours { background: var(--ours); opacity: 1 } .bar.tram { background: var(--base); opacity: .8 }
-.bar i { position: absolute; left: .45rem; top: 50%; transform: translateY(-50%); font: 500 .68rem var(--f-body); font-style: normal; color: #fff; white-space: nowrap }
+.mbar { position: relative; display: block; height: 1.15rem; width: var(--w); border-radius: 2px; background: var(--gt); opacity: .55 }
+.mbar.ours { background: var(--ours); opacity: 1 } .mbar.tram { background: var(--base); opacity: .8 }
+.mbar i { position: absolute; left: .45rem; top: 50%; transform: translateY(-50%); font: 500 .68rem var(--f-body); font-style: normal; color: #fff; white-space: nowrap }
 @media (prefers-reduced-motion: reduce) { .pinned { transition: none } }
 
 /* ---------- viewers ---------- */
@@ -237,8 +237,8 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
       <p class="note-v"><b>154.0</b><small>mm</small></p>
       <p class="note-d">W-MPJPE<sub>100</sub> on EMDB-2, against 192.4 for the best prior result</p>
       <div class="bars" aria-hidden="true">
-        <span class="bar ours" style="--w:80.0%"><i>Ours</i></span>
-        <span class="bar prior" style="--w:100%"><i>GVHMR + HTD-Refine</i></span>
+        <span class="mbar ours" style="--w:80.0%"><i>Ours</i></span>
+        <span class="mbar prior" style="--w:100%"><i>GVHMR + HTD-Refine</i></span>
       </div>
     </figure>
     <figure class="pinned" style="--tilt:1.1deg">
@@ -247,8 +247,8 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
       <p class="note-v"><b>189.8</b><small>vs</small><b class="tram">222.4</b></p>
       <p class="note-d">Ours against TRAM, with identical camera estimates and intrinsics</p>
       <div class="bars" aria-hidden="true">
-        <span class="bar ours" style="--w:85.3%"><i>Ours</i></span>
-        <span class="bar tram" style="--w:100%"><i>TRAM</i></span>
+        <span class="mbar ours" style="--w:85.3%"><i>Ours</i></span>
+        <span class="mbar tram" style="--w:100%"><i>TRAM</i></span>
       </div>
     </figure>
     <figure class="pinned" style="--tilt:-.7deg">
@@ -257,8 +257,8 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
       <p class="note-v"><b>−44.3</b><small>%</small></p>
       <p class="note-d">Error reduction over GVHMR, 276.5 → 154.0</p>
       <div class="bars" aria-hidden="true">
-        <span class="bar ours" style="--w:55.7%"><i>Ours</i></span>
-        <span class="bar prior" style="--w:100%"><i>GVHMR</i></span>
+        <span class="mbar ours" style="--w:55.7%"><i>Ours</i></span>
+        <span class="mbar prior" style="--w:100%"><i>GVHMR</i></span>
       </div>
     </figure>
   </div>
