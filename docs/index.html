@@ -16,7 +16,7 @@
 :root {
   --bg: #f5f7fa; --surface: #ffffff; --ink: #141a24; --muted: #5b6676; --line: #dde3eb;
   --ours: #2f6fde; --base: #cf4b3f; --gt: #8e98a6; --cam: #e08a2e;
-  --stage: #eef2f6; --stage-floor: #fbfcfd; --logo-bg: transparent;
+  --stage: #eef2f6; --stage-floor: #fbfcfd; --logo-bg: transparent; --logo-pad: 0px; --hero-filter: none;
   --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -25,11 +25,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
   --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
-  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; color-scheme: dark } }
+  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; --logo-pad: 2px; --hero-filter: brightness(.42) saturate(.9); color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1218; --surface: #161b23; --ink: #e5eaf1; --muted: #98a3b3; --line: #29313d;
   --ours: #5b93f0; --base: #e8695c; --gt: #a7b0bd; --cam: #f0a24e;
-  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; color-scheme: dark }
+  --stage: #1a2029; --stage-floor: #5d6878; --logo-bg: #f3f5f8; --logo-pad: 2px; --hero-filter: brightness(.42) saturate(.9); color-scheme: dark }
 
 * { box-sizing: border-box }
 [hidden] { display: none !important }
@@ -49,27 +49,35 @@ a { color: var(--ours) }
 :focus-visible { outline: 2px solid var(--ours); outline-offset: 2px; border-radius: 4px }
 
 /* ---------- header ---------- */
-header { padding-block: 3.6rem 1.2rem; text-align: center }
-.logos { display: flex; justify-content: center; align-items: center; gap: 2.2rem; margin-top: 1.1rem }
-.logo { height: 34px; width: auto; object-fit: contain }
-.logo[src$="tsinghua.png"] { height: 44px }
-.logo[src$="tencent_games.png"] { height: 38px }
-.logo[src$="sztu.svg"] { height: 44px }
-/* both marks are drawn for light grounds: on a dark page they sit on one light chip */
-.logos { padding: .55rem 1.2rem; border-radius: 12px; width: fit-content; margin-inline: auto; background: var(--logo-bg) }
-.authors { margin-top: 1.4rem }
-.author-row { margin-bottom: .5rem }
-.author-row span { margin: 0 .8rem; white-space: nowrap }
-.affil-row { margin-top: .7rem; font-size: .88rem; color: var(--muted) }
-.affil-row p { margin: .25rem 0 }
-.contrib { margin-top: .4rem; font-size: .84rem; color: var(--muted) }
-header .tagline { max-width: 44rem; margin-inline: auto }
-.title { font-size: clamp(2.6rem, 1.6rem + 4.5vw, 4.6rem); font-weight: 700; letter-spacing: -.035em; line-height: 1 }
-.title .g { position: relative; color: var(--ours) }
-.tagline { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.1rem, .95rem + .7vw, 1.45rem);
-  margin: .9rem auto 0; max-width: 40rem; color: var(--ink) }
-.authors { color: var(--muted); margin-top: 1rem; font-size: .95rem }
-.links { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-top: 1.4rem }
+/* hero: rendered loop full-bleed behind the title; the shade keeps the top quiet for the type */
+.hero { position: relative; overflow: hidden; text-align: center; isolation: isolate;
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  min-height: clamp(26rem, 52vw, 44rem); display: flex; align-items: center; justify-content: center }
+.hero-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; z-index: -2; filter: var(--hero-filter) }
+.hero-shade { position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 22%, transparent 78%, var(--bg) 100%) }
+.hero-content { padding: 2rem max(16px, env(safe-area-inset-left, 0px)); max-width: 60rem;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--bg) 78%, transparent), transparent); border-radius: 50% }
+.masthead { text-align: center; padding-block: .6rem 0 }
+.title { font-size: clamp(2.8rem, 1.6rem + 5vw, 5rem); font-weight: 700; letter-spacing: -.035em; line-height: 1 }
+.title .g { color: var(--ours) }
+.tagline { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.1rem, .95rem + .7vw, 1.45rem); line-height: 1.3;
+  margin: .9rem auto 0; max-width: 40rem; color: var(--ink); text-wrap: balance; text-align: center }
+.authors { margin: 0 auto; max-width: 52rem }
+.names { list-style: none; margin: 0 0 .35rem; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem 1.6rem;
+  font-size: 1.06rem; font-weight: 500; color: var(--ink) }
+.names li { white-space: nowrap }
+.names sup, .affils sup, .contrib sup { color: var(--ours); font-weight: 600; font-size: .68em; margin-left: .1em }
+.affils sup, .contrib sup { margin: 0 .15em 0 0 }
+.affils { list-style: none; margin: 1.5rem auto 0; padding: 1.1rem 0 0; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: .9rem 2.4rem; max-width: 56rem }
+@media (max-width: 760px) { .affils { flex-wrap: wrap } }
+.affils li { display: flex; align-items: center; gap: .7rem; text-align: left; font-size: .9rem; line-height: 1.35; color: var(--muted) }
+.mark { height: 40px; width: 40px; object-fit: contain; flex: 0 0 auto; background: var(--logo-bg); padding: var(--logo-pad); border-radius: 8px }
+.mark.round { border-radius: 50% }
+.mark.wide { width: auto; height: 34px }
+.contrib { display: flex; flex-wrap: wrap; justify-content: center; gap: .2rem 1.3rem; margin: 1rem 0 0; font-size: .8rem; color: var(--muted) }
+.links { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-top: 1.5rem }
 .links a, .links span { display: inline-flex; align-items: center; gap: .45rem; padding: .5rem 1rem; border-radius: 999px;
   font-weight: 500; font-size: .92rem; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--surface) }
 .links a:hover { border-color: var(--ours); color: var(--ours) }
@@ -162,46 +170,42 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important } }
 </style>
 
-<header class="col">
-  <h1 class="title">Grav<span class="g">HMR</span></h1>
-  <p class="tagline">World-grounded human motion by coupling SLAM and human mesh recovery in a shared gravity frame</p>
-  <div class="authors">
-    <div class="author-row">
-      <span>Hanglei Jin<sup>1,2,*,§</sup></span>
-      <span>Chenglu Sun<sup>2,*,‡</sup></span>
-      <span>Junchen Ge<sup>1</sup></span>
-      <span>Yuchao Wang<sup>2</sup></span>
-    </div>
-    <div class="author-row">
-      <span>Siqi Chen<sup>1</sup></span>
-      <span>Yuzhi Huang<sup>1</sup></span>
-      <span>Jingyan Jiang<sup>3</sup></span>
-      <span>Zhi Wang<sup>1,†</sup></span>
-    </div>
-    <div class="affil-row">
-      <p><sup>1</sup>Shenzhen International Graduate School, Tsinghua University</p>
-      <p><sup>2</sup>Tencent D-Live</p>
-      <p><sup>3</sup>Shenzhen Technology University</p>
-    </div>
-    <p class="contrib"><sup>*</sup>Equal contribution &nbsp; <sup>‡</sup>Project Lead &nbsp; <sup>†</sup>Corresponding author</p>
-    <div class="logos">
-    <img src="assets/logos/tsinghua.png" alt="Tsinghua University" class="logo">
-    <img src="assets/logos/tencent_games.png" alt="Tencent Games" class="logo">
-    <img src="assets/logos/sztu.svg" alt="Shenzhen Technology University" class="logo">
-    </div>
-
-  </div>
-  <nav class="links" aria-label="Paper links">
+<header class="hero">
+  <video class="hero-media" id="heroVideo" autoplay muted loop playsinline preload="auto" poster="assets/hero/hero_poster.jpg" aria-hidden="true" tabindex="-1" disablepictureinpicture>
+    <source src="assets/hero/hero.mp4" type="video/mp4">
+  </video>
+  <div class="hero-shade" aria-hidden="true"></div>
+  <div class="hero-content">
+    <h1 class="title">Grav<span class="g">HMR</span></h1>
+    <p class="tagline">Coupling SLAM and human mesh recovery in a shared gravity frame</p>
+    <nav class="links" aria-label="Paper links">
     <span title="Available after review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>Paper (coming soon)</span>
     <span title="Available after review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></svg>Code (coming soon)</span>
     <a href="#results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Results</a>
     <a href="#citation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h4v4H7zM13 7h4v4h-4zM9 11c0 3-2 5-4 6M15 11c0 3-2 5-4 6"/></svg>BibTeX</a>
   </nav>
+  </div>
+</header>
+<section class="col masthead">
+  <div class="authors">
+    <ul class="names">
+      <li>Hanglei Jin<sup>1,2,*,§</sup></li><li>Chenglu Sun<sup>2,*,‡</sup></li><li>Junchen Ge<sup>1</sup></li><li>Yuchao Wang<sup>2</sup></li>
+    </ul>
+    <ul class="names">
+      <li>Siqi Chen<sup>1</sup></li><li>Yuzhi Huang<sup>1</sup></li><li>Jingyan Jiang<sup>3</sup></li><li>Zhi Wang<sup>1,†</sup></li>
+    </ul>
+    <ul class="affils">
+      <li><img src="assets/logos/tsinghua.png" alt="Tsinghua University" class="mark round"><span><sup>1</sup>Shenzhen International Graduate School,<br>Tsinghua University</span></li>
+      <li><img src="assets/logos/sztu.svg" alt="Shenzhen Technology University" class="mark"><span><sup>3</sup>Shenzhen Technology<br>University</span></li>
+      <li><img src="assets/logos/tencent_games.png" alt="Tencent Games" class="mark wide"><span><sup>2</sup>Tencent D-Live</span></li>
+    </ul>
+    <p class="contrib"><span><sup>*</sup>Equal contribution</span><span><sup>‡</sup>Project lead</span><span><sup>†</sup>Corresponding author</span><span><sup>§</sup>Work done during internship at Tencent</span></p>
+  </div>
   <figure class="teaser">
     <img src="assets/teaser.png" alt="Input frame, TRAM with a 32 degree tilt error, and GravHMR with a 9 degree tilt error against the ground-truth body; below, the accumulated motion of each.">
     <figcaption>TRAM and GravHMR on the same sequence. Relative to the ground-truth body orientation, TRAM has a 32° tilt error and GravHMR has a 9° tilt error. The lower panels show their accumulated motion.</figcaption>
   </figure>
-</header>
+</section>
 
 <main>
 <section class="col abstract" id="abstract">
@@ -294,6 +298,10 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
 <script src="assets/vendor/three.min.js"></script>
 <script>
 "use strict";
+(() => { const v = document.getElementById("heroVideo"); if (!v) return;
+  const rm = matchMedia("(prefers-reduced-motion: reduce)");
+  const apply = () => { if (rm.matches) { v.pause(); v.removeAttribute("autoplay"); } else v.play().catch(() => {}); };
+  apply(); rm.addEventListener("change", apply); })();
 // ---------------- data ----------------
 const WILD = [
   { id: "6667-720",  sport: "Running" },       { id: "25021-720", sport: "Skateboarding" },
