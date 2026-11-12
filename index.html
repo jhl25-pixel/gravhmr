@@ -677,7 +677,7 @@ function chips(el, list, label, sub, onPick) {
   el.innerHTML = list.map(c => `<button type="button" class="chip" data-id="${c.id}" aria-pressed="false"><img src="data/${c.id}.jpg" alt="" loading="lazy"><span>${label(c)}<small>${sub(c)}</small></span></button>`).join("");
   el.addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) onPick(b.dataset.id); });
 }
-const wildLabel = c => c.id.match(/^\d+-\d+$/) ? c.id.split("-")[0] : c.id;
+const wildLabel = c => c.frames ? `${c.frames} frames` : (c.id.match(/^\d+-\d+$/) ? c.id.split("-")[0] : c.id);
 fetch("data/clips.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null).then(L => {
   if (Array.isArray(L) && L.length) WILD.splice(0, WILD.length, ...L);
   chips(document.getElementById("wildChips"), WILD, c => c.sport, wildLabel, selectWild); });

@@ -200,7 +200,7 @@ if ok:
     y0, x0 = (im.shape[0] - 180) // 2, (im.shape[1] - 320) // 2
     cv2.imwrite(str(OUT / f"{a.id}.jpg"), im[y0:y0 + 180, x0:x0 + 320], [cv2.IMWRITE_JPEG_QUALITY, 88])
 
-Lst = [c for c in load_list() if c["id"] != a.id]; entry = {"id": a.id, "sport": a.sport}
+Lst = [c for c in load_list() if c["id"] != a.id]; entry = {"id": a.id, "sport": a.sport, "frames": L}
 Lst = [entry] + Lst if a.first else Lst + [entry]; save_list(Lst)
 tilt = np.degrees(np.arccos(np.clip(nw @ UP, -1, 1)))
 print(f"{a.id}: {L} frames @ {fps:.2f} fps, video {hdr['video_frames']} frames, world up {tilt:.0f} deg from +y (rotated), "
