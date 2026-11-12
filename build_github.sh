@@ -7,5 +7,5 @@ cd "$(dirname "$0")"; mkdir -p docs
   sed "s|https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js|assets/vendor/three.min.js|" index.html
   printf '\n</body>\n</html>\n'
 } > docs/index.html
-cp robots.txt sitemap.xml docs/; cp -r assets data docs/; rm -rf docs/assets/hero/frames; touch docs/.nojekyll
+cp robots.txt sitemap.xml docs/; cp -r assets data docs/; rm -rf docs/assets/hero/frames docs/assets/hero/frames_*; touch docs/.nojekyll
 echo "docs/ ready ($(du -sh docs | cut -f1)). Push the repo and set Pages to serve /docs."

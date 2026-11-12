@@ -377,7 +377,7 @@ footer { color: var(--muted); font-size: .82rem; text-align: center; padding-blo
   const apply = () => { if (rm.matches) { v.pause(); v.removeAttribute("autoplay"); } else v.play().catch(() => {}); };
   apply(); rm.addEventListener("change", apply); })();
 // ---------------- data ----------------
-const WILD = [
+const WILD = [   // fallback; the list on the page comes from data/clips.json (tools/add_clip.py)
   { id: "6667-720",  sport: "Running" },       { id: "25021-720", sport: "Skateboarding" },
   { id: "4568-1080", sport: "Skateboarding" }, { id: "48371-720", sport: "Skating" },
   { id: "21477-720", sport: "Cycling" },
@@ -699,7 +699,10 @@ function chips(el, list, label, sub, onPick) {
   el.innerHTML = list.map(c => `<button type="button" class="chip" data-id="${c.id}" aria-pressed="false"><img src="data/${c.id}.jpg" alt="" loading="lazy"><span>${label(c)}<small>${sub(c)}</small></span></button>`).join("");
   el.addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) onPick(b.dataset.id); });
 }
-chips(document.getElementById("wildChips"), WILD, c => c.sport, c => c.id.split("-")[0], selectWild);
+const wildLabel = c => c.id.match(/^\d+-\d+$/) ? c.id.split("-")[0] : c.id;
+fetch("data/clips.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null).then(L => {
+  if (Array.isArray(L) && L.length) WILD.splice(0, WILD.length, ...L);
+  chips(document.getElementById("wildChips"), WILD, c => c.sport, wildLabel, selectWild); });
 chips(document.getElementById("emdbChips"), EMDB, c => c.name, c => c.id.slice(0, 5), selectEmdb);
 
 // ---------------- render loop: only sections on screen ----------------
