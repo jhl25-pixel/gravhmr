@@ -27,7 +27,9 @@ ap.add_argument("--hmr", help="GVHMR prediction hmr4d_results.pt (global + incam
 ap.add_argument("--vipe", help="ViPE camera npz: data (n,4,4) camera-to-world, inds (n,)")
 ap.add_argument("--video", help="input video (frames must match the result one to one)")
 ap.add_argument("--fps", type=float, default=None, help="default: read from the video")
-ap.add_argument("--gravity", default="hmr", choices=["hmr", "geocalib"])
+ap.add_argument("--gravity", default="hmr", choices=["hmr", "geocalib", "none"],
+                help="none: the result is already gravity-upright (+y up), e.g. an exported demo bundle")
+ap.add_argument("--camera", help="instead of --vipe: npz/pt with T_c2w (n,4,4) in the same world as the result")
 ap.add_argument("--geocalib", help="GeoCalib npz with gravity_cam (only for --gravity geocalib)")
 ap.add_argument("--id", help="clip id (file name on the page)")
 ap.add_argument("--sport", help="label shown on the clip button, e.g. Running")
@@ -54,11 +56,13 @@ if a.remove:
         (OUT / f"{a.remove}.{ext}").unlink(missing_ok=True)
     print(f"removed {a.remove}; {len(L)} clips left"); sys.exit(0)
 
-need = [k for k in ("gvhmr_root", "result", "hmr", "vipe", "video", "id", "sport") if not getattr(a, k)]
+need = [k for k in ("gvhmr_root", "result", "video", "id", "sport") if not getattr(a, k)]
+if not (a.vipe or a.camera): need.append("vipe (or --camera)")
+if a.gravity == "hmr" and not a.hmr: need.append("hmr (or --gravity none)")
 if need:
     ap.error("missing: " + ", ".join("--" + k for k in need))
-for k in ("result", "hmr", "vipe", "video"):
-    setattr(a, k, str(Path(getattr(a, k)).resolve()))
+for k in ("result", "hmr", "vipe", "video", "camera", "geocalib"):
+    if getattr(a, k): setattr(a, k, str(Path(getattr(a, k)).resolve()))
 OUT = OUT.resolve(); LIST = OUT / "clips.json"
 
 import numpy as np, torch, cv2  # noqa: E402
@@ -79,8 +83,11 @@ un = lambda v: v / np.linalg.norm(v, axis=-1, keepdims=True)
 UP = np.array([0.0, 1.0, 0.0])
 
 # ---- result
-r = torch.load(a.result, map_location="cpu", weights_only=False)
-g = r.get("smpl_params_global_optimized", r.get("smpl_params_global"))
+if a.result.endswith(".npz"):
+    r = {k: torch.from_numpy(v) for k, v in np.load(a.result).items()}; g = r     # flat SMPL-X dict
+else:
+    r = torch.load(a.result, map_location="cpu", weights_only=False)
+    g = r.get("smpl_params_global_optimized", r.get("smpl_params_global", r))
 g = {k: torch.as_tensor(v).float() for k, v in g.items() if k in ("body_pose", "betas", "global_orient", "transl")}
 g["body_pose"] = g["body_pose"][:, :63]
 if a.max_frames: g = {k: v[:a.max_frames] for k, v in g.items()}
@@ -133,16 +140,22 @@ class Body:
 B = Body(g)
 
 # ---- gravity up in the ViPE world, then canonical start
-Z = np.load(a.vipe); pos = {int(q): i for i, q in enumerate(Z["inds"])}
-D = Z["data"][[pos[q] for q in range(L)]].astype(np.float64)
+if a.camera:
+    Zc = np.load(a.camera) if a.camera.endswith(".npz") else {k: np.asarray(v) for k, v in torch.load(a.camera, map_location="cpu", weights_only=False).items()}
+    D = np.asarray(Zc["T_c2w"])[:L].astype(np.float64)
+else:
+    Z = np.load(a.vipe); pos = {int(q): i for i, q in enumerate(Z["inds"])}
+    D = Z["data"][[pos[q] for q in range(L)]].astype(np.float64)
 U, _, Vt = np.linalg.svd(D[:, :3, :3]); Rc2w = U @ Vt; Cw = D[:, :3, 3]
-if a.gravity == "geocalib":
+if a.gravity == "none":
+    u_cam = None
+elif a.gravity == "geocalib":
     u_cam = un(-np.load(a.geocalib)["gravity_cam"][:L].astype(np.float64))
 else:
     p = torch.load(a.hmr, map_location="cpu", weights_only=False)
     Gv = rod(p["smpl_params_global"]["global_orient"].numpy()[:L]); Gc = rod(p["smpl_params_incam"]["global_orient"].numpy()[:L])
     u_cam = un(np.einsum("nij,nkj->nik", Gv, Gc)[:, 1, :])
-nw = un(un(np.einsum("nij,nj->ni", Rc2w, u_cam)).mean(0)); ax = np.cross(nw, UP); sn = np.linalg.norm(ax)
+nw = UP.copy() if u_cam is None else un(un(np.einsum("nij,nj->ni", Rc2w, u_cam)).mean(0)); ax = np.cross(nw, UP); sn = np.linalg.norm(ax)
 R_up = cv2.Rodrigues(ax / sn * np.arctan2(sn, nw @ UP))[0] if sn > 1e-8 else np.eye(3)
 B.apply(R_up, np.zeros(3))
 V0 = B.verts([0])[0]; J0 = JR @ V0; off = J0[0].copy(); off[1] = V0[:, 1].min()

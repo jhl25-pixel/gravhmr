@@ -19,6 +19,8 @@ python tools/add_clip.py --gvhmr_root /path/to/GVHMR \
 - 加 `--first` 让主页打开时默认显示这段。
 - 世界坐标会自动按重力转正（ViPE 世界是 +y 朝下），不用手动处理。
 - 删除一段：`python tools/add_clip.py --remove huayun5`
+- 已经转正、自带相机的导出包（`motion_smplx.npz` + `camera.npz`，+Y 朝上）：
+  `python tools/add_clip.py --gvhmr_root ... --result motion_smplx.npz --camera camera.npz --gravity none --video input.mp4 --id ... --sport ...`
 
 ## 2. 发布
 
